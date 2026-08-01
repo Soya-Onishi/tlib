@@ -114,6 +114,8 @@ char *tlib_get_arch_string()
            "xtensa"
 #elif defined(TARGET_I386)
            "i386"
+#elif defined(TARGET_RL78)
+           "rl78"
 #else
            "unknown"
 #endif
@@ -168,6 +170,8 @@ char *tlib_get_arch()
     return "ppc64";
 #elif defined(TARGET_XTENSA)
     return "xtensa";
+#elif defined(TARGET_RL78)
+    return "rl78";
 #else
     return "unknown";
 #endif
