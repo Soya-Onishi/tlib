@@ -1,7 +1,7 @@
 /*
  *  RL78 arch-specific callbacks (tlib -> external).
  *
- *  Copyright (c) Antmicro
+ *  Copyright (c) 2026 Soya Ohnishi
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
