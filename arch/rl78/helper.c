@@ -135,6 +135,12 @@ int arch_tlb_fill(CPUState *env, target_ulong addr, int access_type, int mmu_idx
     return TRANSLATE_SUCCESS;
 }
 
+/* Identity map: virt == phys (same as QEMU rl78_cpu_get_phys_page_debug). */
+target_phys_addr_t cpu_get_phys_page_debug(CPUState *env, target_ulong addr)
+{
+    return addr;
+}
+
 void arch_raise_mmu_fault_exception(CPUState *env, int errcode, int access_type, target_ulong address, void *retaddr)
 {
     /* Identity mapping never faults; nothing to do. */
