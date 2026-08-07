@@ -36,5 +36,3 @@ void *tlib_guest_offset_to_host_ptr(uint64_t offset)
 ```
 
 Weak symbols from `libtlib.a` remain overridable by the executable.
-
-Targets are expected to provide softmmu helpers the same way other arches do (`#include "softmmu_exec.h"` from `op_helper.c`, plus `cpu_get_phys_page_debug`). RL78 follows that pattern. If you target an incomplete arch that still leaves softmmu symbols undefined, supply them from the host at final link.
