@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
   vim \
   llvm \
+  cmake \
+  ninja-build \
   clang \
   clangd \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -47,8 +49,15 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/node/.config/Cursor/User && \
-  chown -R node:node /workspace /home/node/.config
+RUN mkdir -p            \
+  /workspace            \
+  /workspace.worktrees  \
+  /home/node/.config/Cursor/User
+
+RUN chown -R node:node \
+  /workspace           \
+  /workspace.worktrees \
+  /home/node/.config
 
 WORKDIR /workspace
 
@@ -79,9 +88,17 @@ RUN curl https://cursor.com/install -fsS | bash
 COPY .zshrc /home/node/
 
 # Copy and set up firewall script
-COPY init-firewall.sh /usr/local/bin/
+# COPY init-firewall.sh /usr/local/bin/
+# USER root
+# RUN chmod +x /usr/local/bin/init-firewall.sh && \
+#   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
+#   chmod 0440 /etc/sudoers.d/node-firewall
+# USER node
+
+# Copy and set up volume mount script
+COPY init-volume.sh /usr/local/bin/
 USER root
-RUN chmod +x /usr/local/bin/init-firewall.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-  chmod 0440 /etc/sudoers.d/node-firewall
+RUN chmod +x /usr/local/bin/init-volume.sh && \
+  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-volume.sh" > /etc/sudoers.d/node-volume && \
+  chmod 0440 /etc/sudoers.d/node-volume
 USER node
