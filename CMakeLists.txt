@@ -227,7 +227,8 @@ file (GLOB SOURCES
     ${ARM_COMMON_SRC}
     )
 
-add_library (tlib SHARED ${SOURCES})
+# Static archive so host executables can override weak callbacks at final link.
+add_library (tlib STATIC ${SOURCES})
 add_dependencies (tlib tcg)
 set_property(TARGET tlib PROPERTY C_STANDARD 11)
 
@@ -264,12 +265,3 @@ target_link_libraries (tlib
     ${SOFTFLOAT3}
     tcg
     )
-
-# Make GDB's symbol lookup find the `cpu` symbol from the current library
-if(EXISTS "${CMAKE_ROOT}/Modules/CheckLinkerFlag.cmake")
-    include(CheckLinkerFlag)
-    check_linker_flag(C -Wl,-Bsymbolic LINKER_SUPPORTS_BSYMBOLIC)
-    if(LINKER_SUPPORTS_BSYMBOLIC)
-        target_link_options(tlib PUBLIC -Wl,-Bsymbolic)
-    endif()
-endif()

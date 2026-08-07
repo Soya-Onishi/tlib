@@ -1,0 +1,40 @@
+# tlib
+
+Translation library (TCG-based) used by Renode and embeddable host harnesses.
+
+## Build
+
+Requires CMake ≥ 3.12 and a C11 compiler. The build produces a static archive (`libtlib.a`).
+
+```bash
+cmake -S . -B build \
+  -DTARGET_ARCH=rl78 \
+  -DTARGET_WORD_SIZE=32
+cmake --build build
+```
+
+`TARGET_ARCH` must be set (for example `rl78`, `riscv`, `arm`). See `CMakeLists.txt` for the full list.
+
+## Embedding with a static link
+
+Instruction-test hosts can link `libtlib.a` and supply strong definitions for weak callbacks:
+
+```bash
+cc -o harness harness.c -L/path/to/build -ltlib -lpthread
+```
+
+Typical entry points: `tlib_init`, `tlib_map_range`, `tlib_execute` (see `exports.c`).
+
+Override weak callbacks in the host (strong symbols win at final link):
+
+```c
+void *tlib_guest_offset_to_host_ptr(uint64_t offset)
+{
+    /* host-specific mapping */
+    return ...;
+}
+```
+
+Weak symbols from `libtlib.a` remain overridable by the executable.
+
+Targets are expected to provide softmmu helpers the same way other arches do (`#include "softmmu_exec.h"` from `op_helper.c`, plus `cpu_get_phys_page_debug`). RL78 follows that pattern. If you target an incomplete arch that still leaves softmmu symbols undefined, supply them from the host at final link.
