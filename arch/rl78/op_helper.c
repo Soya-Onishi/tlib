@@ -18,5 +18,6 @@
  */
 #include "cpu.h"
 #include "def-helper.h"
+#include "softmmu_exec.h"
 
 /* Instruction helpers will be added here as the decoder is ported. */
