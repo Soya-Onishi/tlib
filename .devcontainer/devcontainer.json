@@ -37,12 +37,15 @@
   "containerUser": "node",
   "mounts": [
     "source=${localEnv:HOME}/.config/Cursor/User,target=/home/node/.config/Cursor/User,type=bind",
+    "source=${localEnv:HOME}/.config/gh,target=/home/node/.config/gh,type=bind",
     "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind",
+    "source=${localEnv:HOME}/.agents,target=/home/node/.agents,type=bind",
     "source=cursor-history,target=/home/node/.cursor,type=volume"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
-    "NO_OPEN_BROWSER": "1"
+    "NO_OPEN_BROWSER": "1",
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
