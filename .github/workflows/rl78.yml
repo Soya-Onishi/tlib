@@ -55,6 +55,9 @@ jobs:
       - name: Run ONEW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'onew.abs'
 
+
+      - name: Run OR instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or.abs'
       - name: Run SEL instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
 

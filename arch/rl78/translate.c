@@ -1241,6 +1241,12 @@ static uint8_t rl78_load_byte(DisasContext *ctx, uint32_t pc)
     return ldub_code(pc);
 }
 
+static bool trans_OR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_or_i32);
+}
+
+
 static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_MOV] = trans_MOV,
     [RL78_INSN_XCH] = trans_unimplemented,
@@ -1255,7 +1261,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SUB] = trans_SUB,
     [RL78_INSN_SUBC] = trans_SUBC,
     [RL78_INSN_AND] = trans_AND,
-    [RL78_INSN_OR] = trans_unimplemented,
+    [RL78_INSN_OR] = trans_OR,
     [RL78_INSN_XOR] = trans_XOR,
     [RL78_INSN_CMP] = trans_CMP,
     [RL78_INSN_CMP0] = trans_unimplemented,
