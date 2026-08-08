@@ -862,6 +862,24 @@ static bool trans_MOVW(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_SUBC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_sub_i32(result, op0, op1);
+    tcg_gen_sub_i32(result, result, cpu_psw_cy);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    tcg_gen_mov_i32(cpu_psw_cy, borrow_byte(result));
+    tcg_gen_mov_i32(cpu_psw_ac, half_borrow(op0, op1, result));
+    tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
 static bool trans_CMP(DisasContext *ctx, RL78Instruction *insn)
 {
     TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
@@ -961,7 +979,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_ADD] = trans_unimplemented,
     [RL78_INSN_ADDC] = trans_unimplemented,
     [RL78_INSN_SUB] = trans_unimplemented,
-    [RL78_INSN_SUBC] = trans_unimplemented,
+    [RL78_INSN_SUBC] = trans_SUBC,
     [RL78_INSN_AND] = trans_unimplemented,
     [RL78_INSN_OR] = trans_unimplemented,
     [RL78_INSN_XOR] = trans_unimplemented,
