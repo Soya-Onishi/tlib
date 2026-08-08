@@ -31,6 +31,9 @@ jobs:
       - name: Run ADDC instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addc.abs'
 
+      - name: Run BR addr16 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'br_addr16.abs'
+
       - name: Run CLRB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrb.abs'
 
