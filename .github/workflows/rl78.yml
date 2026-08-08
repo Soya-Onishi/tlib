@@ -52,6 +52,9 @@ jobs:
 
       - name: Run MOVS instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'movs.abs'
+
+      - name: Run NOT1 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'not1.abs'
       - name: Run ONEB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
 
