@@ -117,14 +117,14 @@ static int rl78_on_io_read(uint64_t address, uint64_t *value_out, unsigned width
     if(test_mmio_contains(address)) {
         if(mmio_read(m, address - TEST_MMIO_BASE, value_out, width) != 0) {
             fprintf(stderr, "harness: unsupported test MMIO read addr=0x%" PRIx64 " width=%u\n", address, width);
-            harness_request_exit(HARNESS_EXIT_ERROR);
+            harness_request_exit(HARNESS_EXIT_ABORT);
             return -1;
         }
         return 0;
     }
 
     fprintf(stderr, "harness: unassigned read addr=0x%" PRIx64 " width=%u\n", address, width);
-    harness_request_exit(HARNESS_EXIT_ERROR);
+    harness_request_exit(HARNESS_EXIT_ABORT);
     return -1;
 }
 
@@ -134,7 +134,7 @@ static int rl78_on_io_write(uint64_t address, uint64_t value, unsigned width, vo
     if(test_mmio_contains(address)) {
         if(mmio_write(m, address - TEST_MMIO_BASE, value, width) != 0) {
             fprintf(stderr, "harness: unsupported test MMIO write addr=0x%" PRIx64 " width=%u\n", address, width);
-            harness_request_exit(HARNESS_EXIT_ERROR);
+            harness_request_exit(HARNESS_EXIT_ABORT);
             return -1;
         }
         if(m->status_written) {
@@ -146,7 +146,7 @@ static int rl78_on_io_write(uint64_t address, uint64_t value, unsigned width, vo
 
     fprintf(stderr, "harness: unassigned write addr=0x%" PRIx64 " value=0x%" PRIx64 " width=%u\n", address, value,
             width);
-    harness_request_exit(HARNESS_EXIT_ERROR);
+    harness_request_exit(HARNESS_EXIT_ABORT);
     return -1;
 }
 

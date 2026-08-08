@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from fetch_abs import DEFAULT_REMOTE_DIR, DEFAULT_ZIP_URL, fetch_abs
+from fetch_abs import DEFAULT_ABS_DIR, fetch_abs
 
 RED = "\033[31m"
 GREEN = "\033[32m"
@@ -28,8 +28,6 @@ REPORT_RE = re.compile(
     r"actual=0x(?P<actual>[0-9a-fA-F]+)\s+"
     r"ignored=(?P<ignored>\d+)"
 )
-
-DEFAULT_ABS_DIR = Path("tests/rl78/out")
 
 
 @dataclass
@@ -114,24 +112,10 @@ def main() -> int:
         action="store_true",
         help="download *.abs from rl78-qemu-tests zip into --abs-dir before running",
     )
-    parser.add_argument(
-        "--fetch-url",
-        default=DEFAULT_ZIP_URL,
-        help="zip archive URL used with --fetch",
-    )
-    parser.add_argument(
-        "--fetch-remote-dir",
-        default=DEFAULT_REMOTE_DIR,
-        help="path inside the archive that holds *.abs",
-    )
     args = parser.parse_args()
 
     if args.fetch:
-        fetch_abs(
-            args.abs_dir,
-            zip_url=args.fetch_url,
-            remote_dir=args.fetch_remote_dir,
-        )
+        fetch_abs(args.abs_dir)
 
     harness = find_harness(args.harness)
     abs_files = collect_abs(args.abs_dir)
