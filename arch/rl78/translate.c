@@ -1258,6 +1258,16 @@ static bool trans_OR1(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_SET1(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+
+    tcg_gen_movi_i32(dst.bit, 1);
+    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+
+    return true;
+}
+
 static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_MOV] = trans_MOV,
     [RL78_INSN_XCH] = trans_unimplemented,
@@ -1301,7 +1311,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_AND1] = trans_unimplemented,
     [RL78_INSN_OR1] = trans_OR1,
     [RL78_INSN_XOR1] = trans_XOR1,
-    [RL78_INSN_SET1] = trans_unimplemented,
+    [RL78_INSN_SET1] = trans_SET1,
     [RL78_INSN_CLR1] = trans_unimplemented,
     [RL78_INSN_NOT1] = trans_unimplemented,
     [RL78_INSN_CALL] = trans_unimplemented,
