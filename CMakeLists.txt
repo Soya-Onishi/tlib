@@ -266,16 +266,19 @@ target_link_libraries (tlib
     tcg
     )
 
-# Standalone instruction-test harness (v1: RL78 only).
-if("${TARGET_ACTUAL_ARCH}" STREQUAL "rl78")
+# Standalone instruction-test harness.
+# Arch glue lives in tests/harness/<arch>/target.c and exports harness_setup().
+set(HARNESS_TARGET_SRC "tests/harness/${TARGET_ACTUAL_ARCH}/target.c")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${HARNESS_TARGET_SRC}")
     add_executable(tlib-harness
         tests/harness/main.c
         tests/harness/harness.c
         tests/harness/elf.c
-        tests/harness/rl78/target.c
+        ${HARNESS_TARGET_SRC}
     )
     target_include_directories(tlib-harness PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness/${TARGET_ACTUAL_ARCH}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ACTUAL_ARCH}
     )

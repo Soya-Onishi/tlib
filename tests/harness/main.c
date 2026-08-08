@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "harness.h"
-#include "rl78/target.h"
+#include "target.h"
 
 int main(int argc, char **argv)
 {
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     }
 
     HarnessConfig config;
-    harness_rl78_setup(&config, max_insns);
+    harness_setup(&config, max_insns);
 
     if(harness_init(&config) != 0) {
         return HARNESS_EXIT_ERROR;

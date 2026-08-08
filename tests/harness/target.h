@@ -1,5 +1,5 @@
 /*
- *  RL78 target glue for the instruction-test harness.
+ *  Per-target harness setup.
  *
  *  Copyright (c) 2026 Soya Ohnishi
  *
@@ -12,5 +12,8 @@
 
 #include "harness.h"
 
-/* Fill config with RL78 memory map, test MMIO hooks, and backing buffers. */
-void harness_rl78_setup(HarnessConfig *config, uint64_t max_insns);
+/*
+ * Implemented by tests/harness/<arch>/target.c (selected via TARGET_ARCH
+ * in CMake). Fills config with that arch's memory map and IO hooks.
+ */
+void harness_setup(HarnessConfig *config, uint64_t max_insns);

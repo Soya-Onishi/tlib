@@ -19,6 +19,7 @@
 #include "callbacks.h"
 #include "cpu-defs.h"
 #include "exports.h"
+#include "infrastructure.h"
 
 HarnessState g_harness;
 
@@ -207,10 +208,8 @@ int harness_init(const HarnessConfig *config)
     g_harness.exit_code = HARNESS_EXIT_ERROR;
     g_harness.running = 0;
 
-    if(!config->on_io_read || !config->on_io_write) {
-        fprintf(stderr, "harness: on_io_read/on_io_write are required\n");
-        return -1;
-    }
+    tlib_assert(config->on_io_read != NULL);
+    tlib_assert(config->on_io_write != NULL);
 
     if(tlib_init((char *)config->cpu_name) != 0) {
         fprintf(stderr, "harness: tlib_init failed\n");
@@ -283,8 +282,8 @@ int harness_run(void)
             break;
         }
 
-        /* Debugger / EXCP_DEBUG is out of scope for v1; treat unexpected
-         * zero-progress results as a harness error. */
+        /* TODO: support debugger stops (EXCP_DEBUG / breakpoints) without
+         * treating them as harness errors. */
         if(ran == 0 && result != EXCP_INTERRUPT && result != EXCP_RETURN_REQUEST) {
             fprintf(stderr, "harness: execute stalled (result=%d)\n", result);
             g_harness.exit_code = HARNESS_EXIT_ERROR;

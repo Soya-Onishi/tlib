@@ -13,6 +13,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "harness.h"
 #include "memory_map.h"
 #include "mmio.h"
 
@@ -149,7 +150,7 @@ static int rl78_on_io_write(uint64_t address, uint64_t value, unsigned width, vo
     return -1;
 }
 
-void harness_rl78_setup(HarnessConfig *config, uint64_t max_insns)
+void harness_setup(HarnessConfig *config, uint64_t max_insns)
 {
     g_regions[0] = (HarnessMemoryRegion) { .guest_base = RL78_ROM_BASE, .size = RL78_ROM_SIZE, .host = g_rom };
     g_regions[1] = (HarnessMemoryRegion) { .guest_base = RL78_RAM_BASE, .size = RL78_RAM_SIZE, .host = g_ram };
