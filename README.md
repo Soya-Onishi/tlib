@@ -49,13 +49,11 @@ cmake --build build
 
 Guest images are CCRL ELF32 `.abs` files published under
 [`Soya-Onishi/rl78-qemu-tests` `out/tests/`](https://github.com/Soya-Onishi/rl78-qemu-tests/tree/main/out/tests).
-Fetch the branch zip archive and run:
+Fetch the branch zip archive, then run:
 
 ```bash
-python3 tests/rl78/fetch_abs.py
+python3 tests/rl78/fetch.py
 python3 tests/rl78/run.py --harness ./build/tlib-harness
-# or in one step:
-python3 tests/rl78/run.py --fetch --harness ./build/tlib-harness
 ```
 
 `tlib-harness` exit codes: `0` guest PASS, `1` guest FAIL (MMIO STATUS),

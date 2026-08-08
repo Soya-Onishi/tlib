@@ -20,7 +20,7 @@ jobs:
         run: cmake --build build -j"$(nproc)"
 
       - name: Fetch guest .abs
-        run: python3 tests/rl78/fetch_abs.py
+        run: python3 tests/rl78/fetch.py
 
       - name: Smoke harness + guest load
         # Exit 3 = guest run abort after a successful load (translate not implemented).
