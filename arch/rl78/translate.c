@@ -819,7 +819,7 @@ static void rl78_gen_ind_jump(DisasContext *ctx, RL78WordRegister reg)
     tcg_gen_shli_i32(pc_s, pc_s, 16);
     tcg_gen_add_i32(pc_s, pc_s, target);
 
-    tcg_gen_mov_i32(cpu_pc, target);
+    tcg_gen_mov_i32(cpu_pc, pc_s);
     gen_exit_tb_no_chaining(ctx->base.tb);
     ctx->base.is_jmp = DISAS_UPDATE;
 }
@@ -837,12 +837,15 @@ static void rl78_gen_rel_jump(DisasContext *ctx, int32_t rel)
 
 static void rl78_gen_skip(DisasContext *ctx, TCGCond cond, TCGv_i32 operand)
 {
+    /*
+     * Same-TB: skip_flag makes the next gen_intermediate_code wrap the
+     * following insn. Cross-TB: skip_en folds into TB_FLAG_SKIP via
+     * cpu_get_tb_cpu_state when this TB ends for other reasons.
+     */
     ctx->skip_flag = true;
     tcg_gen_movi_i32(cpu_skip_en, 1);
     tcg_gen_movcond_i32(cond, cpu_skip_req, operand, tcg_const_i32(1),
                         tcg_const_i32(1), tcg_const_i32(0));
-    /* End TB so the following insn translates with TB_FLAG_SKIP. */
-    ctx->base.is_jmp = DISAS_UPDATE;
 }
 
 static bool trans_MOV(DisasContext *ctx, RL78Instruction *insn)
@@ -933,11 +936,6 @@ static uint32_t rl78_get_pc(DisasContext *ctx)
 static void rl78_set_pc(DisasContext *ctx, uint32_t pc)
 {
     ctx->base.pc = pc;
-}
-
-static void rl78_inc_insnsize(DisasContext *ctx) 
-{
-    ctx->base.tb->size += 1;
 }
 
 static void rl78_set_es(DisasContext *ctx, bool es)
@@ -1044,7 +1042,6 @@ int gen_intermediate_code(CPUState *env, DisasContextBase *base)
     const DecodeHandler handler = {
         .get_pc = rl78_get_pc,
         .set_pc = rl78_set_pc,
-        .inc_insnsize = rl78_inc_insnsize,
         .set_es = rl78_set_es,
         .load_byte = rl78_load_byte,
         .translator_table = translator_table,
@@ -1074,6 +1071,8 @@ int gen_intermediate_code(CPUState *env, DisasContextBase *base)
     if(!decode(dc, &handler)) {
         tlib_abortf("RL78 decode/translate failed (PC=0x%06x)", (unsigned)head_pc);
     }
+    /* Full insn length (opcode + operands + prefixes), matching other tlib targets. */
+    dc->base.tb->size += (int)(dc->base.pc - head_pc);
 
     if(use_skip) {
         gen_set_label(skip_label);
