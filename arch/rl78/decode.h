@@ -223,6 +223,8 @@ struct DecodeHandler {
 
     void (*set_es)(DisasContext *ctx, bool es);
 
+    void (*inc_insnsize)(DisasContext *ctx);
+
     TranslateHandler *translator_table;
 };
 typedef struct DecodeHandler DecodeHandler;

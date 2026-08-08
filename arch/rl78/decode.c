@@ -1127,6 +1127,7 @@ bool decode(DisasContext *ctx, const DecodeHandler *handler)
         insn = map[byte];
 
         if (insn.mnemonic != RL78_INSN_UNKNOWN) {
+            handler->inc_insnsize(ctx);
             handler->set_pc(ctx, pc + 1);
             break;
         }
@@ -1148,6 +1149,7 @@ bool decode(DisasContext *ctx, const DecodeHandler *handler)
             return false;
         }
 
+        handler->inc_insnsize(ctx);
         handler->set_pc(ctx, pc + 1);
         is_first_byte = false;
     }

@@ -649,7 +649,7 @@ static TCGv_i32 rl78_gen_load_operand(DisasContext *ctx, const RL78Operand op, c
     case RL78_OP_CALLT:
     case RL78_OP_NONE:
     default:
-        // implementation bug assertion
+        tlib_abortf("Unexpected load addressing type: %d", op.kind);
         break;
     }
 
@@ -716,7 +716,7 @@ static void rl78_gen_store_operand(DisasContext *ctx, const RL78Operand op,
     case RL78_OP_CALLT:
     case RL78_OP_NONE:
     default:
-        // implementation bug assertion
+        tlib_abortf("Unexpected store addressing type: %d", op.kind);
         break;
     }
 }
@@ -935,6 +935,11 @@ static void rl78_set_pc(DisasContext *ctx, uint32_t pc)
     ctx->base.pc = pc;
 }
 
+static void rl78_inc_insnsize(DisasContext *ctx) 
+{
+    ctx->base.tb->size += 1;
+}
+
 static void rl78_set_es(DisasContext *ctx, bool es)
 {
     ctx->use_es = es;
@@ -1039,6 +1044,7 @@ int gen_intermediate_code(CPUState *env, DisasContextBase *base)
     const DecodeHandler handler = {
         .get_pc = rl78_get_pc,
         .set_pc = rl78_set_pc,
+        .inc_insnsize = rl78_inc_insnsize,
         .set_es = rl78_set_es,
         .load_byte = rl78_load_byte,
         .translator_table = translator_table,
