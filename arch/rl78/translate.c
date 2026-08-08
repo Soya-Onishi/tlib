@@ -17,6 +17,11 @@
 
 typedef TCGMemOp MemOp;
 
+typedef struct RL78BitData {
+    TCGv_i32 byte;
+    TCGv_i32 bit;
+} RL78BitData;
+
 /* General purpose registers, indexed by [bank][byte-register]. */
 static TCGv_i32 cpu_regs[REGISTER_BANK_NUM][RL78_BYTE_REG_NUM];
 
@@ -721,6 +726,83 @@ static void rl78_gen_store_operand(DisasContext *ctx, const RL78Operand op,
     }
 }
 
+static RL78BitData rl78_gen_load_bit(DisasContext *ctx, const RL78OperandBit op)
+{
+    TCGv_i32 data;
+    TCGv_i32 bit = tcg_temp_new_i32();
+
+    switch (op.kind) {
+    case RL78_BITOP_SADDR:
+        data = load_saddr(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_SFR:
+        data = load_sfr(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_REG_A:
+        data = load_byte_reg(RL78_BYTE_REG_A);
+        break;
+    case RL78_BITOP_ABS16:
+        data = load_abs16(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_IND_HL: {
+        RL78OperandIndRegImm indop = {.base = RL78_WORD_REG_HL, .imm = 0};
+
+        data = load_ind_reg_imm(ctx, indop, MO_8);
+        break;
+    }
+    case RL78_BITOP_CY:
+        data = load_psw_cy();
+        break;
+    default:
+        // implementation bug assertion
+        break;
+    }
+
+    tcg_gen_shri_i32(bit, data, op.bit);
+    tcg_gen_andi_i32(bit, bit, 0x01);
+
+    return (RL78BitData){.byte = data, .bit = bit};
+}
+
+static void rl78_gen_store_bit(DisasContext *ctx, const RL78OperandBit op,
+                               RL78BitData bit)
+{
+    TCGv_i32 stored_data = tcg_temp_new_i32();
+    TCGv_i32 stored_bit  = tcg_temp_new_i32();
+    const uint32_t mask  = 1 << op.bit;
+
+    tcg_gen_mov_i32(stored_data, bit.byte);
+    tcg_gen_andi_i32(stored_data, stored_data, ~mask);
+    tcg_gen_shli_i32(stored_bit, bit.bit, op.bit);
+    tcg_gen_or_i32(stored_data, stored_data, stored_bit);
+
+    switch (op.kind) {
+    case RL78_BITOP_SADDR:
+        store_saddr(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_SFR:
+        store_sfr(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_REG_A:
+        store_byte_reg(RL78_BYTE_REG_A, stored_data);
+        break;
+    case RL78_BITOP_ABS16:
+        store_abs16(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_IND_HL: {
+        RL78OperandIndRegImm addr = {.base = RL78_WORD_REG_HL, .imm = 0};
+        store_ind_reg_imm(ctx, addr, stored_data, MO_8);
+        break;
+    }
+    case RL78_BITOP_CY:
+        store_psw_cy(stored_data);
+        break;
+    default:
+        // implementation bug assertion
+        break;
+    }
+}
+
 static inline bool use_goto_tb(DisasContext *dc, target_ulong dest)
 {
     return (dc->base.tb->pc & TARGET_PAGE_MASK) == (dest & TARGET_PAGE_MASK);
@@ -927,6 +1009,16 @@ static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
 
 static bool trans_NOP(DisasContext *ctx, RL78Instruction *insn) { return true; }
 
+static bool trans_OR1(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    RL78BitData src = rl78_gen_load_bit(ctx, insn->operand[1].bit);
+
+    tcg_gen_or_i32(dst.bit, dst.bit, src.bit);
+    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+
+    return true;
+}
 
 static uint32_t rl78_get_pc(DisasContext *ctx)
 {
@@ -990,7 +1082,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_ROLWC] = trans_unimplemented,
     [RL78_INSN_MOV1] = trans_unimplemented,
     [RL78_INSN_AND1] = trans_unimplemented,
-    [RL78_INSN_OR1] = trans_unimplemented,
+    [RL78_INSN_OR1] = trans_OR1,
     [RL78_INSN_XOR1] = trans_unimplemented,
     [RL78_INSN_SET1] = trans_unimplemented,
     [RL78_INSN_CLR1] = trans_unimplemented,
