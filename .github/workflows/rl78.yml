@@ -23,8 +23,34 @@ jobs:
         run: python3 tests/rl78/fetch.py
 
       - name: Run MOV instruction tests
-        # Byte MOV suites (mov_*.abs). Other guests still need per-insn bring-up.
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov_*.abs'
+
+      - name: Run ADD instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'add.abs'
+
+      - name: Run ADDC instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addc.abs'
+
+      - name: Run CLRB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrb.abs'
+
+      - name: Run CLRW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrw.abs'
+
+      - name: Run CMPW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
+
+      - name: Run ONEB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
 
       - name: Run SEL instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
+
+      - name: Run SUB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sub.abs'
+
+      - name: Run XCHW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xchw.abs'
+
+      - name: Run XOR instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xor.abs'
