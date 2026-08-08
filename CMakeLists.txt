@@ -265,3 +265,5 @@ target_link_libraries (tlib
     ${SOFTFLOAT3}
     tcg
     )
+
+add_subdirectory(tests)
