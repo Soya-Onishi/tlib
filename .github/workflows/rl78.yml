@@ -53,6 +53,9 @@ jobs:
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
 
 
+
+      - name: Run MOV1 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov1.abs'
       - name: Run MOVS instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'movs.abs'
 
