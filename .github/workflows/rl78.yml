@@ -34,6 +34,9 @@ jobs:
       - name: Run CLRW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrw.abs'
 
+      - name: Run CMPW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
+
       - name: Run ONEB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
 
