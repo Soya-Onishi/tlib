@@ -1056,6 +1056,11 @@ static bool trans_XOR(DisasContext *ctx, RL78Instruction *insn)
     return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_xor_i32);
 }
 
+static bool trans_AND(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_and_i32);
+}
+
 static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
 {
     RL78Operand op = insn->operand[0];
@@ -1135,7 +1140,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_ADDC] = trans_ADDC,
     [RL78_INSN_SUB] = trans_SUB,
     [RL78_INSN_SUBC] = trans_SUBC,
-    [RL78_INSN_AND] = trans_unimplemented,
+    [RL78_INSN_AND] = trans_AND,
     [RL78_INSN_OR] = trans_unimplemented,
     [RL78_INSN_XOR] = trans_XOR,
     [RL78_INSN_CMP] = trans_CMP,
