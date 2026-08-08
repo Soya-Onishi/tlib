@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+from fetch_abs import DEFAULT_REF, DEFAULT_REMOTE_DIR, DEFAULT_REPO, fetch_abs
+
 RED = "\033[31m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
@@ -26,6 +28,8 @@ REPORT_RE = re.compile(
     r"actual=0x(?P<actual>[0-9a-fA-F]+)\s+"
     r"ignored=(?P<ignored>\d+)"
 )
+
+DEFAULT_ABS_DIR = Path("tests/rl78/out")
 
 
 @dataclass
@@ -73,7 +77,7 @@ def find_harness(explicit: Optional[Path]) -> Path:
 def collect_abs(abs_dir: Path) -> List[Path]:
     files = sorted(Path(p) for p in glob.glob(str(abs_dir / "**" / "*.abs"), recursive=True))
     if not files:
-        raise SystemExit(f"no .abs files under {abs_dir}")
+        raise SystemExit(f"no .abs files under {abs_dir} (pass --fetch to download)")
     return files
 
 
@@ -97,10 +101,35 @@ def run_one(harness: Path, abs_path: Path, max_insns: Optional[int]) -> TestResu
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--abs-dir", type=Path, required=True, help="directory containing *.abs guests")
+    parser.add_argument(
+        "--abs-dir",
+        type=Path,
+        default=DEFAULT_ABS_DIR,
+        help=f"directory containing *.abs guests (default: {DEFAULT_ABS_DIR})",
+    )
     parser.add_argument("--harness", type=Path, default=None, help="path to tlib-harness")
     parser.add_argument("--max-insns", type=int, default=None, help="per-guest instruction limit")
+    parser.add_argument(
+        "--fetch",
+        action="store_true",
+        help="download *.abs from rl78-qemu-tests into --abs-dir before running",
+    )
+    parser.add_argument("--fetch-repo", default=DEFAULT_REPO, help="git URL used with --fetch")
+    parser.add_argument("--fetch-ref", default=DEFAULT_REF, help="git ref used with --fetch")
+    parser.add_argument(
+        "--fetch-remote-dir",
+        default=DEFAULT_REMOTE_DIR,
+        help="path inside the remote repo that holds *.abs",
+    )
     args = parser.parse_args()
+
+    if args.fetch:
+        fetch_abs(
+            args.abs_dir,
+            repo=args.fetch_repo,
+            ref=args.fetch_ref,
+            remote_dir=args.fetch_remote_dir,
+        )
 
     harness = find_harness(args.harness)
     abs_files = collect_abs(args.abs_dir)

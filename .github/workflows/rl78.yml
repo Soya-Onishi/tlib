@@ -1,0 +1,41 @@
+name: RL78
+
+on:
+  push:
+    branches: [rl78, master]
+  pull_request:
+    branches: [rl78, master]
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DTARGET_ARCH=rl78 -DTARGET_WORD_SIZE=32
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Fetch guest .abs
+        run: python3 tests/rl78/fetch_abs.py --dest tests/rl78/out
+
+      - name: Smoke harness + guest load
+        # Guests abort at translate until RL78 instruction translation lands.
+        # This step checks that the harness loads a real .abs and exits cleanly.
+        run: |
+          set +e
+          ./build/tlib-harness tests/rl78/out/mov_ri.abs --max-insns 1000
+          rc=$?
+          set -e
+          if [ "$rc" -ne 2 ]; then
+            echo "expected harness exit 2 (translate not implemented), got $rc" >&2
+            exit 1
+          fi
+
+      - name: Run RL78 instruction tests
+        # Full PASS/FAIL reporting needs instruction translation; keep visible until then.
+        continue-on-error: true
+        run: python3 tests/rl78/run.py --abs-dir tests/rl78/out --harness ./build/tlib-harness

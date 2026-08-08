@@ -45,7 +45,17 @@ When `TARGET_ARCH=rl78`, the build also produces `tlib-harness`:
 cmake -S . -B build -DTARGET_ARCH=rl78 -DTARGET_WORD_SIZE=32
 cmake --build build
 ./build/tlib-harness guest.abs [--max-insns N]
-python3 tests/rl78/run.py --abs-dir DIR --harness ./build/tlib-harness
 ```
 
-Guest images are CCRL ELF32 `.abs` files. Assemble the harness smoke guest with `make -C tests/rl78`.
+Guest images are CCRL ELF32 `.abs` files published under
+[`Soya-Onishi/rl78-qemu-tests` `out/tests/`](https://github.com/Soya-Onishi/rl78-qemu-tests/tree/main/out/tests).
+Fetch them (git sparse checkout) and run:
+
+```bash
+python3 tests/rl78/fetch_abs.py --dest tests/rl78/out
+python3 tests/rl78/run.py --abs-dir tests/rl78/out --harness ./build/tlib-harness
+# or in one step:
+python3 tests/rl78/run.py --fetch --harness ./build/tlib-harness
+```
+
+Pin a ref with `--ref` / `--fetch-ref` when you need a reproducible guest set.
