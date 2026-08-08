@@ -25,3 +25,6 @@ jobs:
       - name: Run MOV instruction tests
         # Byte MOV suites (mov_*.abs). Other guests still need per-insn bring-up.
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov_*.abs'
+
+      - name: Run CLR1 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clr1.abs'
