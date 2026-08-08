@@ -862,6 +862,13 @@ static bool trans_MOVW(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_CLRW(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op = tcg_const_i32(0);
+    rl78_gen_store_operand(ctx, insn->operand[0], op, MO_16);
+    return true;
+}
+
 static bool trans_CMP(DisasContext *ctx, RL78Instruction *insn)
 {
     TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
@@ -957,7 +964,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_MOVW] = trans_MOVW,
     [RL78_INSN_XCHW] = trans_unimplemented,
     [RL78_INSN_ONEW] = trans_unimplemented,
-    [RL78_INSN_CLRW] = trans_unimplemented,
+    [RL78_INSN_CLRW] = trans_CLRW,
     [RL78_INSN_ADD] = trans_unimplemented,
     [RL78_INSN_ADDC] = trans_unimplemented,
     [RL78_INSN_SUB] = trans_unimplemented,
