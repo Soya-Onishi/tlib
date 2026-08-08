@@ -10,4 +10,6 @@ CMakeFiles/
 *.so
 *.a
 Makefile
+!tests/**/Makefile
+tests/rl78/out/
 .idea/

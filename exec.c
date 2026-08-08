@@ -181,12 +181,23 @@ static void free_all_page_descriptors_inner(void **lp, int level, visitor_functi
 void free_all_page_descriptors()
 {
     int i;
+    /* When P_L1_SHIFT < L2_BITS the L1 entries point directly at leaf
+     * PhysPageDesc arrays. The (SHIFT/L2_BITS - 1) formula underflows to -1
+     * in that case (e.g. RL78: 20-bit phys, 256B pages); clamp to 0. */
+    int phys_level = (int)(P_L1_SHIFT / L2_BITS) - 1;
+    int virt_level = (int)(V_L1_SHIFT / L2_BITS) - 1;
+    if(phys_level < 0) {
+        phys_level = 0;
+    }
+    if(virt_level < 0) {
+        virt_level = 0;
+    }
 
     for(i = 0; i < P_L1_SIZE; i++) {
-        free_all_page_descriptors_inner(l1_phys_map + i, P_L1_SHIFT / L2_BITS - 1, NULL);
+        free_all_page_descriptors_inner(l1_phys_map + i, phys_level, NULL);
     }
     for(i = 0; i < V_L1_SIZE; i++) {
-        free_all_page_descriptors_inner(l1_map + i, V_L1_SHIFT / L2_BITS - 1, free_page_code_bitmap);
+        free_all_page_descriptors_inner(l1_map + i, virt_level, free_page_code_bitmap);
     }
 }
 

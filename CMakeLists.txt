@@ -265,3 +265,20 @@ target_link_libraries (tlib
     ${SOFTFLOAT3}
     tcg
     )
+
+# Standalone instruction-test harness (v1: RL78 only).
+if("${TARGET_ACTUAL_ARCH}" STREQUAL "rl78")
+    add_executable(tlib-harness
+        tests/harness/main.c
+        tests/harness/harness.c
+        tests/harness/elf.c
+    )
+    target_include_directories(tlib-harness PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/rl78
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ACTUAL_ARCH}
+    )
+    target_link_libraries(tlib-harness PRIVATE tlib)
+    set_property(TARGET tlib-harness PROPERTY C_STANDARD 11)
+endif()

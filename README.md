@@ -36,3 +36,16 @@ void *tlib_guest_offset_to_host_ptr(uint64_t offset)
 ```
 
 Weak symbols from `libtlib.a` remain overridable by the executable.
+
+## RL78 instruction-test harness
+
+When `TARGET_ARCH=rl78`, the build also produces `tlib-harness`:
+
+```bash
+cmake -S . -B build -DTARGET_ARCH=rl78 -DTARGET_WORD_SIZE=32
+cmake --build build
+./build/tlib-harness guest.abs [--max-insns N]
+python3 tests/rl78/run.py --abs-dir DIR --harness ./build/tlib-harness
+```
+
+Guest images are CCRL ELF32 `.abs` files. Assemble them with `tests/rl78/Makefile` (requires a Renesas DVF under `tests/rl78/device/`).
