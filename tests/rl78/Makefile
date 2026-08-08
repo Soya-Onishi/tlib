@@ -1,10 +1,12 @@
 .SECONDEXPANSION:
 
-# Assemble RL78 TCG tests with CCRL into ELF32 .abs images.
-# Place the Renesas device file next to this Makefile (see DEVICE).
+# Assemble RL78 harness smoke guests with CCRL into ELF32 .abs images.
+# Instruction-level TCG suites are added in later PRs; this Makefile only
+# covers harness-owned sources under tcg/ (currently pass_mmio.asm).
 
 CCRL ?= ccrl
-DEVICE ?= $(CURDIR)/device/DR7F100GLG.DVF
+# CCRL looks up the DVF by name from its install path; override if needed.
+DEVICE ?= DR7F100GLG.DVF
 
 CCRLFLAGS = \
 	-cpu=S3 \
@@ -26,11 +28,6 @@ all: $(ABS_FILES)
 	mkdir -p $@
 
 $(OUT_DIR)/%.abs: %.asm | $$(@D)/
-	@if [ ! -f "$(DEVICE)" ]; then \
-		echo "Missing device file: $(DEVICE)" >&2; \
-		echo "Provide the CCRL DVF (issue #9) or set DEVICE=..." >&2; \
-		exit 1; \
-	fi
 	$(CCRL) $(CCRLFLAGS) -obj_path=$(dir $@) -lnkopt=-OUTPUT=$@ $<
 
 clean:

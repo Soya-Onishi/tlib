@@ -48,6 +48,7 @@ void cpu_reset(CPUState *env)
 
     env->irq_index    = -1;
     env->irq_priority = 0;
+    env->wfi          = 0;
 
     /* RL78 fetches the reset vector from address 0x00000 (2 bytes, little endian).
      * When memory is not yet mapped this reads back 0 through the external bus. */

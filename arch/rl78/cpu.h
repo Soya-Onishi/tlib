@@ -162,8 +162,12 @@ static inline void cpu_get_tb_cpu_state(CPUState *env, target_ulong *pc, target_
 
 static inline bool cpu_has_work(CPUState *env)
 {
-    /* Match other arches: the CPU has work unless it is parked in WFI.
-     * A pending hard IRQ clears WFI so interrupt injection can wake it. */
+    /*
+     * cpu_exec() returns EXCP_WFI immediately when this is false.
+     * The previous HARD-IRQ-only check parked the core before any TB ran,
+     * so a bare harness could never execute guest code. Match other arches:
+     * the CPU has work unless it is in WFI; a pending hard IRQ clears WFI.
+     */
     env->wfi &= !(env->interrupt_request & CPU_INTERRUPT_HARD);
     return !env->wfi;
 }

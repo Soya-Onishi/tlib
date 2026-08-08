@@ -48,4 +48,4 @@ cmake --build build
 python3 tests/rl78/run.py --abs-dir DIR --harness ./build/tlib-harness
 ```
 
-Guest images are CCRL ELF32 `.abs` files. Assemble them with `tests/rl78/Makefile` (requires a Renesas DVF under `tests/rl78/device/`).
+Guest images are CCRL ELF32 `.abs` files. Assemble the harness smoke guest with `make -C tests/rl78`.
