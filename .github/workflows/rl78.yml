@@ -22,22 +22,6 @@ jobs:
       - name: Fetch guest .abs
         run: python3 tests/rl78/fetch.py
 
-      - name: Smoke harness + guest load
-        # Exit 3 = guest run abort after a successful load (translate not implemented).
-        # Exit 2 = host/setup failure (missing file, bad ELF, …) and must fail CI.
-        run: |
-          set +e
-          out=$(./build/tlib-harness tests/rl78/out/mov_ri.abs --max-insns 1000 2>&1)
-          rc=$?
-          set -e
-          printf '%s\n' "$out"
-          if [ "$rc" -ne 3 ]; then
-            echo "expected harness exit 3 (guest run abort), got $rc" >&2
-            exit 1
-          fi
-          printf '%s\n' "$out" | grep -q 'RL78 instruction translation is not yet implemented'
-
-      - name: Run RL78 instruction tests
-        # Full PASS/FAIL reporting needs instruction translation; keep visible until then.
-        continue-on-error: true
-        run: python3 tests/rl78/run.py --harness ./build/tlib-harness
+      - name: Run MOV instruction tests
+        # Byte MOV suites (mov_*.abs). Other guests still need per-insn bring-up.
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov_*.abs'

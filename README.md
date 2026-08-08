@@ -56,6 +56,8 @@ python3 tests/rl78/fetch.py
 python3 tests/rl78/run.py --harness ./build/tlib-harness
 ```
 
+Filter guests with `--glob` (for example `--glob 'mov_*.abs'`).
+
 `tlib-harness` exit codes: `0` guest PASS, `1` guest FAIL (MMIO STATUS),
 `2` host/setup error (CLI, init, ELF load), `3` guest run abort (translate,
 unassigned access, max-insns, …).
