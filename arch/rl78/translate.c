@@ -606,6 +606,84 @@ static void store_ind_base_word(DisasContext *ctx,
 control_reg(es);
 control_reg(psw_cy);
 
+static RL78BitData rl78_gen_load_bit(DisasContext *ctx, const RL78OperandBit op)
+{
+    TCGv_i32 data;
+    TCGv_i32 bit = tcg_temp_new_i32();
+
+    switch (op.kind) {
+    case RL78_BITOP_SADDR:
+        data = load_saddr(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_SFR:
+        data = load_sfr(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_REG_A:
+        data = load_byte_reg(RL78_BYTE_REG_A);
+        break;
+    case RL78_BITOP_ABS16:
+        data = load_abs16(ctx, op.addr, MO_8);
+        break;
+    case RL78_BITOP_IND_HL: {
+        RL78OperandIndRegImm indop = {.base = RL78_WORD_REG_HL, .imm = 0};
+
+        data = load_ind_reg_imm(ctx, indop, MO_8);
+        break;
+    }
+    case RL78_BITOP_CY:
+        data = load_psw_cy();
+        break;
+    default:
+        tlib_abortf("Unexpected bit load kind: %d", op.kind);
+        data = tcg_const_i32(0);
+        break;
+    }
+
+    tcg_gen_shri_i32(bit, data, op.bit);
+    tcg_gen_andi_i32(bit, bit, 0x01);
+
+    return (RL78BitData){.byte = data, .bit = bit};
+}
+
+static void rl78_gen_store_bit(DisasContext *ctx, const RL78OperandBit op,
+                               RL78BitData bit)
+{
+    TCGv_i32 stored_data = tcg_temp_new_i32();
+    TCGv_i32 stored_bit  = tcg_temp_new_i32();
+    const uint32_t mask  = 1 << op.bit;
+
+    tcg_gen_mov_i32(stored_data, bit.byte);
+    tcg_gen_andi_i32(stored_data, stored_data, ~mask);
+    tcg_gen_shli_i32(stored_bit, bit.bit, op.bit);
+    tcg_gen_or_i32(stored_data, stored_data, stored_bit);
+
+    switch (op.kind) {
+    case RL78_BITOP_SADDR:
+        store_saddr(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_SFR:
+        store_sfr(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_REG_A:
+        store_byte_reg(RL78_BYTE_REG_A, stored_data);
+        break;
+    case RL78_BITOP_ABS16:
+        store_abs16(ctx, op.addr, stored_data, MO_8);
+        break;
+    case RL78_BITOP_IND_HL: {
+        RL78OperandIndRegImm addr = {.base = RL78_WORD_REG_HL, .imm = 0};
+        store_ind_reg_imm(ctx, addr, stored_data, MO_8);
+        break;
+    }
+    case RL78_BITOP_CY:
+        store_psw_cy(stored_data);
+        break;
+    default:
+        tlib_abortf("Unexpected bit store kind: %d", op.kind);
+        break;
+    }
+}
+
 static TCGv_i32 rl78_gen_load_operand(DisasContext *ctx, const RL78Operand op, const TCGMemOp memop)
 {
     switch (op.kind) {
@@ -726,84 +804,6 @@ static void rl78_gen_store_operand(DisasContext *ctx, const RL78Operand op,
     }
 }
 
-static RL78BitData rl78_gen_load_bit(DisasContext *ctx, const RL78OperandBit op)
-{
-    TCGv_i32 data;
-    TCGv_i32 bit = tcg_temp_new_i32();
-
-    switch (op.kind) {
-    case RL78_BITOP_SADDR:
-        data = load_saddr(ctx, op.addr, MO_8);
-        break;
-    case RL78_BITOP_SFR:
-        data = load_sfr(ctx, op.addr, MO_8);
-        break;
-    case RL78_BITOP_REG_A:
-        data = load_byte_reg(RL78_BYTE_REG_A);
-        break;
-    case RL78_BITOP_ABS16:
-        data = load_abs16(ctx, op.addr, MO_8);
-        break;
-    case RL78_BITOP_IND_HL: {
-        RL78OperandIndRegImm indop = {.base = RL78_WORD_REG_HL, .imm = 0};
-
-        data = load_ind_reg_imm(ctx, indop, MO_8);
-        break;
-    }
-    case RL78_BITOP_CY:
-        data = load_psw_cy();
-        break;
-    default:
-        tlib_abortf("Unexpected bit operand kind: %d", op.kind);
-        data = tcg_const_i32(0);
-        break;
-    }
-
-    tcg_gen_shri_i32(bit, data, op.bit);
-    tcg_gen_andi_i32(bit, bit, 0x01);
-
-    return (RL78BitData){.byte = data, .bit = bit};
-}
-
-static void rl78_gen_store_bit(DisasContext *ctx, const RL78OperandBit op,
-                               RL78BitData bit)
-{
-    TCGv_i32 stored_data = tcg_temp_new_i32();
-    TCGv_i32 stored_bit  = tcg_temp_new_i32();
-    const uint32_t mask  = 1 << op.bit;
-
-    tcg_gen_mov_i32(stored_data, bit.byte);
-    tcg_gen_andi_i32(stored_data, stored_data, ~mask);
-    tcg_gen_shli_i32(stored_bit, bit.bit, op.bit);
-    tcg_gen_or_i32(stored_data, stored_data, stored_bit);
-
-    switch (op.kind) {
-    case RL78_BITOP_SADDR:
-        store_saddr(ctx, op.addr, stored_data, MO_8);
-        break;
-    case RL78_BITOP_SFR:
-        store_sfr(ctx, op.addr, stored_data, MO_8);
-        break;
-    case RL78_BITOP_REG_A:
-        store_byte_reg(RL78_BYTE_REG_A, stored_data);
-        break;
-    case RL78_BITOP_ABS16:
-        store_abs16(ctx, op.addr, stored_data, MO_8);
-        break;
-    case RL78_BITOP_IND_HL: {
-        RL78OperandIndRegImm addr = {.base = RL78_WORD_REG_HL, .imm = 0};
-        store_ind_reg_imm(ctx, addr, stored_data, MO_8);
-        break;
-    }
-    case RL78_BITOP_CY:
-        store_psw_cy(stored_data);
-        break;
-    default:
-        // implementation bug assertion
-        break;
-    }
-}
-
 static inline bool use_goto_tb(DisasContext *dc, target_ulong dest)
 {
     return (dc->base.tb->pc & TARGET_PAGE_MASK) == (dest & TARGET_PAGE_MASK);
@@ -858,6 +858,27 @@ static TCGv_i32 zero_byte(TCGv_i32 result)
     TCGv_i32 z = tcg_temp_new_i32();
 
     tcg_gen_andi_i32(z, result, 0xFF);
+    tcg_gen_movcond_i32(TCG_COND_EQ, z, z, tcg_const_i32(0),
+                        tcg_const_i32(1), tcg_const_i32(0));
+
+    return z;
+}
+
+static TCGv_i32 borrow_word(TCGv_i32 result)
+{
+    TCGv_i32 cy = tcg_temp_new_i32();
+
+    tcg_gen_shri_i32(cy, result, 16);
+    tcg_gen_andi_i32(cy, cy, 0x01);
+
+    return cy;
+}
+
+static TCGv_i32 zero_word(TCGv_i32 result)
+{
+    TCGv_i32 z = tcg_temp_new_i32();
+
+    tcg_gen_andi_i32(z, result, 0xFFFF);
     tcg_gen_movcond_i32(TCG_COND_EQ, z, z, tcg_const_i32(0),
                         tcg_const_i32(1), tcg_const_i32(0));
 
@@ -938,12 +959,122 @@ static bool trans_MOV(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_ONEB(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op = tcg_const_i32(1);
+    rl78_gen_store_operand(ctx, insn->operand[0], op, MO_8);
+    return true;
+}
+
 static bool trans_MOVW(DisasContext *ctx, RL78Instruction *insn)
 {
     TCGv_i32 src = rl78_gen_load_operand(ctx, insn->operand[1], MO_16);
     rl78_gen_store_operand(ctx, insn->operand[0], src, MO_16);
     return true;
 }
+
+static bool trans_CLRB(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op = tcg_const_i32(0);
+    rl78_gen_store_operand(ctx, insn->operand[0], op, MO_8);
+    return true;
+}
+
+static bool trans_ONEW(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op = tcg_const_i32(1);
+    rl78_gen_store_operand(ctx, insn->operand[0], op, MO_16);
+    return true;
+}
+
+static bool trans_CLRW(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op = tcg_const_i32(0);
+    rl78_gen_store_operand(ctx, insn->operand[0], op, MO_16);
+    return true;
+}
+
+static bool trans_ADD(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_add_i32(result, op0, op1);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    tcg_gen_mov_i32(cpu_psw_cy, carry_byte(result));
+    tcg_gen_mov_i32(cpu_psw_ac, half_carry(op0, op1, result));
+    tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
+static bool trans_SUB(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_sub_i32(result, op0, op1);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    tcg_gen_mov_i32(cpu_psw_cy, borrow_byte(result));
+    tcg_gen_mov_i32(cpu_psw_ac, half_borrow(op0, op1, result));
+    tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
+static bool trans_SUBC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_sub_i32(result, op0, op1);
+    tcg_gen_sub_i32(result, result, cpu_psw_cy);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    tcg_gen_mov_i32(cpu_psw_cy, borrow_byte(result));
+    tcg_gen_mov_i32(cpu_psw_ac, half_borrow(op0, op1, result));
+    tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
+static bool trans_XCHW(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0 = rl78_gen_load_operand(ctx, insn->operand[0], MO_16);
+    TCGv_i32 op1 = rl78_gen_load_operand(ctx, insn->operand[1], MO_16);
+    rl78_gen_store_operand(ctx, insn->operand[1], op0, MO_16);
+    rl78_gen_store_operand(ctx, insn->operand[0], op1, MO_16);
+    return true;
+}
+
+static bool trans_MOVS(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 is_src_zero = tcg_temp_new_i32();
+    TCGv_i32 is_a_zero   = tcg_temp_new_i32();
+    TCGv_i32 a           = load_byte_reg(RL78_BYTE_REG_A);
+
+    TCGv_i32 src = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    rl78_gen_store_operand(ctx, insn->operand[0], src, MO_8);
+
+    tcg_gen_movcond_i32(TCG_COND_EQ, is_src_zero, src, tcg_const_i32(0),
+                        tcg_const_i32(1), tcg_const_i32(0));
+    tcg_gen_movcond_i32(TCG_COND_EQ, is_a_zero, a, tcg_const_i32(0),
+                        tcg_const_i32(1), tcg_const_i32(0));
+    tcg_gen_mov_i32(cpu_psw_z, is_src_zero);
+
+    tcg_gen_or_i32(cpu_psw_cy, is_src_zero, is_a_zero);
+
+    return true;
+}
+
 
 static bool trans_CMP(DisasContext *ctx, RL78Instruction *insn)
 {
@@ -956,6 +1087,39 @@ static bool trans_CMP(DisasContext *ctx, RL78Instruction *insn)
     tcg_gen_mov_i32(cpu_psw_cy, borrow_byte(result));
     tcg_gen_mov_i32(cpu_psw_ac, half_borrow(op0, op1, result));
     tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
+static bool trans_ADDC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_add_i32(result, op0, op1);
+    tcg_gen_add_i32(result, result, cpu_psw_cy);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    tcg_gen_mov_i32(cpu_psw_cy, carry_byte(result));
+    tcg_gen_mov_i32(cpu_psw_ac, half_carry(op0, op1, result));
+    tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
+
+    return true;
+}
+
+static bool trans_CMPW(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, insn->operand[0], MO_16);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, insn->operand[1], MO_16);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_sub_i32(result, op0, op1);
+
+    tcg_gen_mov_i32(cpu_psw_cy, borrow_word(result));
+    tcg_gen_mov_i32(cpu_psw_ac, tcg_const_i32(0));
+    tcg_gen_mov_i32(cpu_psw_z, zero_word(result));
 
     return true;
 }
@@ -973,6 +1137,32 @@ static bool trans_INC(DisasContext *ctx, RL78Instruction *insn)
     tcg_gen_mov_i32(cpu_psw_z, zero_byte(result));
 
     return true;
+}
+
+static bool bitwise(DisasContext *ctx, RL78Operand dst, RL78Operand src,
+                    void (*op)(TCGv_i32, TCGv_i32, TCGv_i32))
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, dst, MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, src, MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    op(result, op0, op1);
+    tcg_gen_movcond_i32(TCG_COND_EQ, cpu_psw_z, result, tcg_const_i32(0),
+                        tcg_const_i32(1), tcg_const_i32(0));
+
+    rl78_gen_store_operand(ctx, dst, result, MO_8);
+
+    return true;
+}
+
+static bool trans_XOR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_xor_i32);
+}
+
+static bool trans_AND(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_and_i32);
 }
 
 static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
@@ -1008,18 +1198,27 @@ static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
-static bool trans_NOP(DisasContext *ctx, RL78Instruction *insn) { return true; }
-
-static bool trans_SET1(DisasContext *ctx, RL78Instruction *insn)
+static bool trans_SEL(DisasContext *ctx, RL78Instruction *insn)
 {
-    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    const uint32_t sel = insn->operand[0].const_op;
 
-    tcg_gen_movi_i32(dst.bit, 1);
-    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+    tcg_gen_movi_i32(cpu_psw_rbs, sel & 0x03);
 
     return true;
 }
 
+static bool trans_NOP(DisasContext *ctx, RL78Instruction *insn) { return true; }
+
+static bool trans_XOR1(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    RL78BitData src = rl78_gen_load_bit(ctx, insn->operand[1].bit);
+
+    tcg_gen_xor_i32(dst.bit, dst.bit, src.bit);
+    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+
+    return true;
+}
 
 static uint32_t rl78_get_pc(DisasContext *ctx)
 {
@@ -1042,29 +1241,56 @@ static uint8_t rl78_load_byte(DisasContext *ctx, uint32_t pc)
     return ldub_code(pc);
 }
 
+static bool trans_OR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_or_i32);
+}
+
+
+static bool trans_OR1(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    RL78BitData src = rl78_gen_load_bit(ctx, insn->operand[1].bit);
+
+    tcg_gen_or_i32(dst.bit, dst.bit, src.bit);
+    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+
+    return true;
+}
+
+static bool trans_SET1(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData dst = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+
+    tcg_gen_movi_i32(dst.bit, 1);
+    rl78_gen_store_bit(ctx, insn->operand[0].bit, dst);
+
+    return true;
+}
+
 static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_MOV] = trans_MOV,
     [RL78_INSN_XCH] = trans_unimplemented,
-    [RL78_INSN_ONEB] = trans_unimplemented,
-    [RL78_INSN_CLRB] = trans_unimplemented,
+    [RL78_INSN_ONEB] = trans_ONEB,
+    [RL78_INSN_CLRB] = trans_CLRB,
     [RL78_INSN_MOVW] = trans_MOVW,
-    [RL78_INSN_XCHW] = trans_unimplemented,
-    [RL78_INSN_ONEW] = trans_unimplemented,
-    [RL78_INSN_CLRW] = trans_unimplemented,
-    [RL78_INSN_ADD] = trans_unimplemented,
-    [RL78_INSN_ADDC] = trans_unimplemented,
-    [RL78_INSN_SUB] = trans_unimplemented,
-    [RL78_INSN_SUBC] = trans_unimplemented,
-    [RL78_INSN_AND] = trans_unimplemented,
-    [RL78_INSN_OR] = trans_unimplemented,
-    [RL78_INSN_XOR] = trans_unimplemented,
+    [RL78_INSN_XCHW] = trans_XCHW,
+    [RL78_INSN_ONEW] = trans_ONEW,
+    [RL78_INSN_CLRW] = trans_CLRW,
+    [RL78_INSN_ADD] = trans_ADD,
+    [RL78_INSN_ADDC] = trans_ADDC,
+    [RL78_INSN_SUB] = trans_SUB,
+    [RL78_INSN_SUBC] = trans_SUBC,
+    [RL78_INSN_AND] = trans_AND,
+    [RL78_INSN_OR] = trans_OR,
+    [RL78_INSN_XOR] = trans_XOR,
     [RL78_INSN_CMP] = trans_CMP,
     [RL78_INSN_CMP0] = trans_unimplemented,
     [RL78_INSN_CMPS] = trans_unimplemented,
-    [RL78_INSN_MOVS] = trans_unimplemented,
+    [RL78_INSN_MOVS] = trans_MOVS,
     [RL78_INSN_ADDW] = trans_unimplemented,
     [RL78_INSN_SUBW] = trans_unimplemented,
-    [RL78_INSN_CMPW] = trans_unimplemented,
+    [RL78_INSN_CMPW] = trans_CMPW,
     [RL78_INSN_MULU] = trans_unimplemented,
     [RL78_INSN_INC] = trans_INC,
     [RL78_INSN_DEC] = trans_unimplemented,
@@ -1083,8 +1309,8 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_ROLWC] = trans_unimplemented,
     [RL78_INSN_MOV1] = trans_unimplemented,
     [RL78_INSN_AND1] = trans_unimplemented,
-    [RL78_INSN_OR1] = trans_unimplemented,
-    [RL78_INSN_XOR1] = trans_unimplemented,
+    [RL78_INSN_OR1] = trans_OR1,
+    [RL78_INSN_XOR1] = trans_XOR1,
     [RL78_INSN_SET1] = trans_SET1,
     [RL78_INSN_CLR1] = trans_unimplemented,
     [RL78_INSN_NOT1] = trans_unimplemented,
@@ -1112,7 +1338,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SKNZ] = trans_unimplemented,
     [RL78_INSN_SKH] = trans_unimplemented,
     [RL78_INSN_SKNH] = trans_unimplemented,
-    [RL78_INSN_SEL] = trans_unimplemented,
+    [RL78_INSN_SEL] = trans_SEL,
     [RL78_INSN_NOP] = trans_NOP,
     [RL78_INSN_HALT] = trans_unimplemented,
     [RL78_INSN_STOP] = trans_unimplemented,

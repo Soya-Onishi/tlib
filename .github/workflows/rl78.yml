@@ -23,8 +23,61 @@ jobs:
         run: python3 tests/rl78/fetch.py
 
       - name: Run MOV instruction tests
-        # Byte MOV suites (mov_*.abs). Other guests still need per-insn bring-up.
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov_*.abs'
+
+      - name: Run ADD instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'add.abs'
+
+      - name: Run ADDC instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addc.abs'
+
+      - name: Run AND instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'and.abs'
+
+      - name: Run BR addr16 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'br_addr16.abs'
+
+      - name: Run CLRB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrb.abs'
+
+      - name: Run CLRW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrw.abs'
+
+      - name: Run CMPW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
+
+
+      - name: Run MOVS instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'movs.abs'
+      - name: Run ONEB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
+
+      - name: Run ONEW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'onew.abs'
+
+
+      - name: Run OR instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or.abs'
+
+      - name: Run OR1 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or1.abs'
+      - name: Run SEL instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
+
 
       - name: Run SET1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'set1.abs'
+      - name: Run SUB instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sub.abs'
+
+      - name: Run SUBC instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'subc.abs'
+
+      - name: Run XCHW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xchw.abs'
+
+      - name: Run XOR instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xor.abs'
+
+      - name: Run XOR1 instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xor1.abs'
