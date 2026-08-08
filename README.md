@@ -49,7 +49,7 @@ cmake --build build
 
 Guest images are CCRL ELF32 `.abs` files published under
 [`Soya-Onishi/rl78-qemu-tests` `out/tests/`](https://github.com/Soya-Onishi/rl78-qemu-tests/tree/main/out/tests).
-Fetch them (git sparse checkout) and run:
+Fetch them from the branch zip archive and run:
 
 ```bash
 python3 tests/rl78/fetch_abs.py --dest tests/rl78/out
@@ -58,4 +58,6 @@ python3 tests/rl78/run.py --abs-dir tests/rl78/out --harness ./build/tlib-harnes
 python3 tests/rl78/run.py --fetch --harness ./build/tlib-harness
 ```
 
-Pin a ref with `--ref` / `--fetch-ref` when you need a reproducible guest set.
+Default archive:
+`https://github.com/Soya-Onishi/rl78-qemu-tests/archive/refs/heads/main.zip`
+(override with `--url` / `--fetch-url`).

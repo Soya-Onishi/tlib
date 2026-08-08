@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from fetch_abs import DEFAULT_REF, DEFAULT_REMOTE_DIR, DEFAULT_REPO, fetch_abs
+from fetch_abs import DEFAULT_REMOTE_DIR, DEFAULT_ZIP_URL, fetch_abs
 
 RED = "\033[31m"
 GREEN = "\033[32m"
@@ -112,22 +112,24 @@ def main() -> int:
     parser.add_argument(
         "--fetch",
         action="store_true",
-        help="download *.abs from rl78-qemu-tests into --abs-dir before running",
+        help="download *.abs from rl78-qemu-tests zip into --abs-dir before running",
     )
-    parser.add_argument("--fetch-repo", default=DEFAULT_REPO, help="git URL used with --fetch")
-    parser.add_argument("--fetch-ref", default=DEFAULT_REF, help="git ref used with --fetch")
+    parser.add_argument(
+        "--fetch-url",
+        default=DEFAULT_ZIP_URL,
+        help="zip archive URL used with --fetch",
+    )
     parser.add_argument(
         "--fetch-remote-dir",
         default=DEFAULT_REMOTE_DIR,
-        help="path inside the remote repo that holds *.abs",
+        help="path inside the archive that holds *.abs",
     )
     args = parser.parse_args()
 
     if args.fetch:
         fetch_abs(
             args.abs_dir,
-            repo=args.fetch_repo,
-            ref=args.fetch_ref,
+            zip_url=args.fetch_url,
             remote_dir=args.fetch_remote_dir,
         )
 
