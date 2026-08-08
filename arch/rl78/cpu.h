@@ -163,12 +163,24 @@ static inline void cpu_get_tb_cpu_state(CPUState *env, target_ulong *pc, target_
 static inline bool cpu_has_work(CPUState *env)
 {
     /*
-     * cpu_exec() returns EXCP_WFI immediately when this is false.
-     * The previous HARD-IRQ-only check parked the core before any TB ran,
-     * so a bare harness could never execute guest code. Match other arches:
-     * the CPU has work unless it is in WFI; a pending hard IRQ clears WFI.
+     * In tlib, cpu_exec() gates TB execution on this predicate:
+     *   if (!cpu_has_work(env)) return EXCP_WFI;
+     * So true means "run TBs now", false means "parked".
+     *
+     * That is not the same as QEMU's cpu_has_work / has_work, which mainly
+     * answers "is there a wake-up reason while halted?" (typically pending
+     * IRQs). QEMU still runs a non-halted vCPU even when has_work is false
+     * (idle check is roughly: halted && !cpu_has_work).
+     *
+     * Returning only (interrupt_request & CPU_INTERRUPT_HARD) therefore
+     * matches QEMU-ish wake semantics but breaks tlib: with no IRQ the
+     * core never reaches translation. Follow the other tlib targets
+     * (riscv/i386/ppc/...): clear WFI on a wake IRQ, then return !wfi.
+     * env->wfi itself remains "nonzero if suspended" (see cpu-defs.h).
      */
-    env->wfi &= !(env->interrupt_request & CPU_INTERRUPT_HARD);
+    if(env->interrupt_request & CPU_INTERRUPT_HARD) {
+        env->wfi = 0;
+    }
     return !env->wfi;
 }
 
