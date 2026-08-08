@@ -102,6 +102,7 @@ static int dispatch_io_read(uint64_t address, uint64_t *value_out, unsigned widt
         *value_out = 0;
         return 0;
     }
+    tlib_assert(g_harness.config.on_io_read != NULL);
     return g_harness.config.on_io_read(address, value_out, width, g_harness.config.io_user);
 }
 
@@ -110,6 +111,7 @@ static int dispatch_io_write(uint64_t address, uint64_t value, unsigned width)
     if(!g_harness.running) {
         return 0;
     }
+    tlib_assert(g_harness.config.on_io_write != NULL);
     return g_harness.config.on_io_write(address, value, width, g_harness.config.io_user);
 }
 
@@ -207,9 +209,6 @@ int harness_init(const HarnessConfig *config)
     g_harness.config = *config;
     g_harness.exit_code = HARNESS_EXIT_ERROR;
     g_harness.running = 0;
-
-    tlib_assert(config->on_io_read != NULL);
-    tlib_assert(config->on_io_write != NULL);
 
     if(tlib_init((char *)config->cpu_name) != 0) {
         fprintf(stderr, "harness: tlib_init failed\n");
