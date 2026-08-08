@@ -43,6 +43,9 @@ jobs:
       - name: Run ONEB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
 
+      - name: Run SEL instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
+
       - name: Run SUB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sub.abs'
 

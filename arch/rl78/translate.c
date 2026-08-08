@@ -1064,6 +1064,15 @@ static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_SEL(DisasContext *ctx, RL78Instruction *insn)
+{
+    const uint32_t sel = insn->operand[0].const_op;
+
+    tcg_gen_movi_i32(cpu_psw_rbs, sel & 0x03);
+
+    return true;
+}
+
 static bool trans_NOP(DisasContext *ctx, RL78Instruction *insn) { return true; }
 
 
@@ -1158,7 +1167,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SKNZ] = trans_unimplemented,
     [RL78_INSN_SKH] = trans_unimplemented,
     [RL78_INSN_SKNH] = trans_unimplemented,
-    [RL78_INSN_SEL] = trans_unimplemented,
+    [RL78_INSN_SEL] = trans_SEL,
     [RL78_INSN_NOP] = trans_NOP,
     [RL78_INSN_HALT] = trans_unimplemented,
     [RL78_INSN_STOP] = trans_unimplemented,
