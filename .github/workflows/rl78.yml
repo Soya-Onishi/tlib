@@ -31,6 +31,9 @@ jobs:
       - name: Run CLRB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrb.abs'
 
+      - name: Run CLRW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrw.abs'
+
       - name: Run XCHW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xchw.abs'
 
