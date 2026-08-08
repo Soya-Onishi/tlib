@@ -14,9 +14,13 @@
 #include <stddef.h>
 
 enum {
+    /* Guest MMIO STATUS write. */
     HARNESS_EXIT_PASS = 0,
     HARNESS_EXIT_FAIL = 1,
+    /* Host-side failures before / outside guest execution (CLI, init, ELF load). */
     HARNESS_EXIT_ERROR = 2,
+    /* Guest was running but stopped without MMIO STATUS (abort, max-insns, …). */
+    HARNESS_EXIT_ABORT = 3,
 };
 
 typedef struct HarnessMemoryRegion {

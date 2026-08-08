@@ -27,6 +27,8 @@ REPORT_RE = re.compile(
     r"ignored=(?P<ignored>\d+)"
 )
 
+DEFAULT_ABS_DIR = Path("tests/rl78/out")
+
 
 @dataclass
 class TestResult:
@@ -73,7 +75,7 @@ def find_harness(explicit: Optional[Path]) -> Path:
 def collect_abs(abs_dir: Path) -> List[Path]:
     files = sorted(Path(p) for p in glob.glob(str(abs_dir / "**" / "*.abs"), recursive=True))
     if not files:
-        raise SystemExit(f"no .abs files under {abs_dir}")
+        raise SystemExit(f"no .abs files under {abs_dir} (run tests/rl78/fetch.py first)")
     return files
 
 
@@ -97,7 +99,12 @@ def run_one(harness: Path, abs_path: Path, max_insns: Optional[int]) -> TestResu
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--abs-dir", type=Path, required=True, help="directory containing *.abs guests")
+    parser.add_argument(
+        "--abs-dir",
+        type=Path,
+        default=DEFAULT_ABS_DIR,
+        help=f"directory containing *.abs guests (default: {DEFAULT_ABS_DIR})",
+    )
     parser.add_argument("--harness", type=Path, default=None, help="path to tlib-harness")
     parser.add_argument("--max-insns", type=int, default=None, help="per-guest instruction limit")
     args = parser.parse_args()

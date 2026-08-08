@@ -84,8 +84,8 @@ void tlib_abort(char *message)
         g_harness.abort_message[0] = '\0';
         fprintf(stderr, "harness: abort\n");
     }
-    harness_request_exit(HARNESS_EXIT_ERROR);
-    exit(HARNESS_EXIT_ERROR);
+    harness_request_exit(HARNESS_EXIT_ABORT);
+    exit(HARNESS_EXIT_ABORT);
 }
 
 void tlib_log(int32_t level, char *message)
@@ -248,7 +248,7 @@ int harness_run(void)
     const uint32_t chunk = 64 * 1024;
 
     g_harness.finished = 0;
-    g_harness.exit_code = HARNESS_EXIT_ERROR;
+    g_harness.exit_code = HARNESS_EXIT_ABORT;
     g_harness.executed_insns = 0;
     g_harness.running = 1;
 
@@ -257,7 +257,7 @@ int harness_run(void)
     while(!g_harness.finished) {
         if(g_harness.executed_insns >= max_insns) {
             fprintf(stderr, "harness: max instruction count exceeded (%" PRIu64 ")\n", max_insns);
-            g_harness.exit_code = HARNESS_EXIT_ERROR;
+            g_harness.exit_code = HARNESS_EXIT_ABORT;
             break;
         }
 
@@ -277,7 +277,7 @@ int harness_run(void)
 
         if(result == EXCP_WFI) {
             fprintf(stderr, "harness: CPU entered WFI unexpectedly\n");
-            g_harness.exit_code = HARNESS_EXIT_ERROR;
+            g_harness.exit_code = HARNESS_EXIT_ABORT;
             break;
         }
 
@@ -285,7 +285,7 @@ int harness_run(void)
          * treating them as harness errors. */
         if(ran == 0 && result != EXCP_INTERRUPT && result != EXCP_RETURN_REQUEST) {
             fprintf(stderr, "harness: execute stalled (result=%d)\n", result);
-            g_harness.exit_code = HARNESS_EXIT_ERROR;
+            g_harness.exit_code = HARNESS_EXIT_ABORT;
             break;
         }
     }
