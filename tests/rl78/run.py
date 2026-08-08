@@ -72,10 +72,10 @@ def find_harness(explicit: Optional[Path]) -> Path:
     raise SystemExit("tlib-harness not found; pass --harness or set TLIB_HARNESS")
 
 
-def collect_abs(abs_dir: Path) -> List[Path]:
-    files = sorted(Path(p) for p in glob.glob(str(abs_dir / "**" / "*.abs"), recursive=True))
+def collect_abs(abs_dir: Path, pattern: str = "*.abs") -> List[Path]:
+    files = sorted(Path(p) for p in glob.glob(str(abs_dir / "**" / pattern), recursive=True))
     if not files:
-        raise SystemExit(f"no .abs files under {abs_dir} (run tests/rl78/fetch.py first)")
+        raise SystemExit(f"no files matching {pattern!r} under {abs_dir} (run tests/rl78/fetch.py first)")
     return files
 
 
@@ -105,12 +105,18 @@ def main() -> int:
         default=DEFAULT_ABS_DIR,
         help=f"directory containing *.abs guests (default: {DEFAULT_ABS_DIR})",
     )
+    parser.add_argument(
+        "--glob",
+        dest="glob_pattern",
+        default="*.abs",
+        help="glob for guest images under --abs-dir (default: *.abs)",
+    )
     parser.add_argument("--harness", type=Path, default=None, help="path to tlib-harness")
     parser.add_argument("--max-insns", type=int, default=None, help="per-guest instruction limit")
     args = parser.parse_args()
 
     harness = find_harness(args.harness)
-    abs_files = collect_abs(args.abs_dir)
+    abs_files = collect_abs(args.abs_dir, args.glob_pattern)
 
     failures = 0
     for abs_path in abs_files:

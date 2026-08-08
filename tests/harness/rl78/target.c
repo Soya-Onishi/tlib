@@ -29,8 +29,10 @@ typedef struct {
 
 static uint8_t g_rom[RL78_ROM_SIZE];
 static uint8_t g_ram[RL78_RAM_SIZE];
+/* Stub backing for 0xFFF00–0xFFFFF. Direct 0xFFFF8–0xFFFFD still bypass in TCG. */
+static uint8_t g_sfr[RL78_SFR_END - RL78_SFR_BASE];
 static Rl78TestMmio g_mmio;
-static HarnessMemoryRegion g_regions[2];
+static HarnessMemoryRegion g_regions[3];
 static uint64_t g_io_pages[1];
 
 static uint16_t *mmio_reg(Rl78TestMmio *m, uint64_t offset)
@@ -154,6 +156,9 @@ void harness_setup(HarnessConfig *config, uint64_t max_insns)
 {
     g_regions[0] = (HarnessMemoryRegion) { .guest_base = RL78_ROM_BASE, .size = RL78_ROM_SIZE, .host = g_rom };
     g_regions[1] = (HarnessMemoryRegion) { .guest_base = RL78_RAM_BASE, .size = RL78_RAM_SIZE, .host = g_ram };
+    g_regions[2] = (HarnessMemoryRegion) {
+        .guest_base = RL78_SFR_BASE, .size = (RL78_SFR_END - RL78_SFR_BASE), .host = g_sfr
+    };
     g_io_pages[0] = TEST_MMIO_BASE;
 
     *config = (HarnessConfig) {
