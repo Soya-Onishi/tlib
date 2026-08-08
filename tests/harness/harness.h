@@ -37,7 +37,7 @@ typedef struct HarnessConfig {
     const uint64_t *io_pages;
     size_t io_page_count;
 
-    /* Called for guest IO / unassigned accesses. Return non-zero to stop. */
+    /* Required: guest IO / unassigned accesses. Return non-zero to stop. */
     int (*on_io_read)(uint64_t address, uint64_t *value_out, unsigned width, void *user);
     int (*on_io_write)(uint64_t address, uint64_t value, unsigned width, void *user);
     void *io_user;
@@ -48,7 +48,12 @@ typedef struct HarnessState {
     int finished;
     int exit_code;
     uint64_t executed_insns;
-    int strict_unassigned;
+    /*
+     * False until harness_run() starts. tlib_init()->cpu_reset() reads the
+     * reset vector before map_range, so unassigned access must be ignored
+     * during init; once running, unassigned access is fatal.
+     */
+    int running;
     char abort_message[256];
 } HarnessState;
 

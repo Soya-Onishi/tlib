@@ -58,7 +58,7 @@ static int guest_write_bytes(uint64_t guest_addr, const void *data, size_t len)
     return 0;
 }
 
-static int elf_write_cb(uint64_t guest_addr, const void *data, size_t len, void *user)
+static int elf_write(uint64_t guest_addr, const void *data, size_t len, void *user)
 {
     (void)user;
     return guest_write_bytes(guest_addr, data, len);
@@ -97,30 +97,19 @@ void tlib_log(int32_t level, char *message)
 
 static int dispatch_io_read(uint64_t address, uint64_t *value_out, unsigned width)
 {
-    if(!g_harness.strict_unassigned) {
+    if(!g_harness.running) {
         *value_out = 0;
         return 0;
     }
-    if(g_harness.config.on_io_read) {
-        return g_harness.config.on_io_read(address, value_out, width, g_harness.config.io_user);
-    }
-    fprintf(stderr, "harness: unassigned read addr=0x%" PRIx64 " width=%u\n", address, width);
-    harness_request_exit(HARNESS_EXIT_ERROR);
-    return -1;
+    return g_harness.config.on_io_read(address, value_out, width, g_harness.config.io_user);
 }
 
 static int dispatch_io_write(uint64_t address, uint64_t value, unsigned width)
 {
-    if(!g_harness.strict_unassigned) {
+    if(!g_harness.running) {
         return 0;
     }
-    if(g_harness.config.on_io_write) {
-        return g_harness.config.on_io_write(address, value, width, g_harness.config.io_user);
-    }
-    fprintf(stderr, "harness: unassigned write addr=0x%" PRIx64 " value=0x%" PRIx64 " width=%u\n", address, value,
-            width);
-    harness_request_exit(HARNESS_EXIT_ERROR);
-    return -1;
+    return g_harness.config.on_io_write(address, value, width, g_harness.config.io_user);
 }
 
 uint64_t tlib_read_byte(uint64_t address, uint64_t cpustate)
@@ -199,9 +188,7 @@ void harness_request_exit(int exit_code)
 {
     g_harness.finished = 1;
     g_harness.exit_code = exit_code;
-    /* tlib_init() may touch guest memory before ranges are mapped; only
-     * request a translation-block exit once the CPU is executing. */
-    if(g_harness.strict_unassigned) {
+    if(g_harness.running) {
         tlib_set_return_request();
     }
 }
@@ -218,7 +205,12 @@ int harness_init(const HarnessConfig *config)
     memset(&g_harness, 0, sizeof(g_harness));
     g_harness.config = *config;
     g_harness.exit_code = HARNESS_EXIT_ERROR;
-    g_harness.strict_unassigned = 0;
+    g_harness.running = 0;
+
+    if(!config->on_io_read || !config->on_io_write) {
+        fprintf(stderr, "harness: on_io_read/on_io_write are required\n");
+        return -1;
+    }
 
     if(tlib_init((char *)config->cpu_name) != 0) {
         fprintf(stderr, "harness: tlib_init failed\n");
@@ -249,7 +241,7 @@ void harness_dispose(void)
 
 int harness_load_elf(const char *path)
 {
-    return harness_elf_load_file(path, elf_write_cb, NULL);
+    return harness_elf_load_file(path, elf_write, NULL);
 }
 
 int harness_run(void)
@@ -260,18 +252,18 @@ int harness_run(void)
     g_harness.finished = 0;
     g_harness.exit_code = HARNESS_EXIT_ERROR;
     g_harness.executed_insns = 0;
-    g_harness.strict_unassigned = 1;
+    g_harness.running = 1;
 
     tlib_reset();
 
     while(!g_harness.finished) {
-        uint64_t remaining = max_insns - g_harness.executed_insns;
-        if(remaining == 0) {
+        if(g_harness.executed_insns >= max_insns) {
             fprintf(stderr, "harness: max instruction count exceeded (%" PRIu64 ")\n", max_insns);
             g_harness.exit_code = HARNESS_EXIT_ERROR;
             break;
         }
 
+        uint64_t remaining = max_insns - g_harness.executed_insns;
         uint32_t step = chunk;
         if(remaining < step) {
             step = (uint32_t)remaining;
@@ -291,6 +283,8 @@ int harness_run(void)
             break;
         }
 
+        /* Debugger / EXCP_DEBUG is out of scope for v1; treat unexpected
+         * zero-progress results as a harness error. */
         if(ran == 0 && result != EXCP_INTERRUPT && result != EXCP_RETURN_REQUEST) {
             fprintf(stderr, "harness: execute stalled (result=%d)\n", result);
             g_harness.exit_code = HARNESS_EXIT_ERROR;

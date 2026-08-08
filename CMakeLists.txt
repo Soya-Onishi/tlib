@@ -272,10 +272,10 @@ if("${TARGET_ACTUAL_ARCH}" STREQUAL "rl78")
         tests/harness/main.c
         tests/harness/harness.c
         tests/harness/elf.c
+        tests/harness/rl78/target.c
     )
     target_include_directories(tlib-harness PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/rl78
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/arch/${TARGET_ACTUAL_ARCH}
     )
