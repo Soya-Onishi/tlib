@@ -925,6 +925,27 @@ static bool trans_INC(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool bitwise(DisasContext *ctx, RL78Operand dst, RL78Operand src,
+                    void (*op)(TCGv_i32, TCGv_i32, TCGv_i32))
+{
+    TCGv_i32 op0    = rl78_gen_load_operand(ctx, dst, MO_8);
+    TCGv_i32 op1    = rl78_gen_load_operand(ctx, src, MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    op(result, op0, op1);
+    tcg_gen_movcond_i32(TCG_COND_EQ, cpu_psw_z, result, tcg_const_i32(0),
+                        tcg_const_i32(1), tcg_const_i32(0));
+
+    rl78_gen_store_operand(ctx, dst, result, MO_8);
+
+    return true;
+}
+
+static bool trans_XOR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_xor_i32);
+}
+
 static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
 {
     RL78Operand op = insn->operand[0];
@@ -997,7 +1018,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SUBC] = trans_unimplemented,
     [RL78_INSN_AND] = trans_unimplemented,
     [RL78_INSN_OR] = trans_unimplemented,
-    [RL78_INSN_XOR] = trans_unimplemented,
+    [RL78_INSN_XOR] = trans_XOR,
     [RL78_INSN_CMP] = trans_CMP,
     [RL78_INSN_CMP0] = trans_unimplemented,
     [RL78_INSN_CMPS] = trans_unimplemented,

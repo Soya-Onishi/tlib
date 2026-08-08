@@ -33,3 +33,6 @@ jobs:
 
       - name: Run XCHW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xchw.abs'
+
+      - name: Run XOR instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xor.abs'
