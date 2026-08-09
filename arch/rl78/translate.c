@@ -1149,6 +1149,92 @@ static bool trans_INC(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+
+static bool trans_ROR(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_shli_i32(result, src, 8);
+    tcg_gen_or_i32(result, result, src);
+    tcg_gen_shri_i32(result, result, 1);
+
+    tcg_gen_andi_i32(result, result, 0xFF);
+    tcg_gen_andi_i32(cpu_psw_cy, src, 0x01);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    return true;
+}
+
+static bool trans_ROL(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_shli_i32(result, src, 8);
+    tcg_gen_or_i32(result, result, src);
+    tcg_gen_shli_i32(result, result, 1);
+    tcg_gen_shri_i32(result, result, 8);
+    tcg_gen_andi_i32(result, result, 0xFF);
+
+    tcg_gen_shri_i32(cpu_psw_cy, src, 7);
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    return true;
+}
+
+static bool trans_RORC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = load_byte_reg(RL78_BYTE_REG_A);
+    TCGv_i32 cy     = tcg_temp_new_i32();
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_shli_i32(cy, cpu_psw_cy, 7);
+    tcg_gen_shri_i32(result, src, 1);
+    tcg_gen_or_i32(result, result, cy);
+    tcg_gen_andi_i32(cpu_psw_cy, src, 0x01);
+
+    store_byte_reg(RL78_BYTE_REG_A, result);
+
+    return true;
+}
+
+static bool trans_ROLC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = load_byte_reg(RL78_BYTE_REG_A);
+    TCGv_i32 cy     = tcg_temp_new_i32();
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_mov_i32(cy, cpu_psw_cy);
+    tcg_gen_shli_i32(result, src, 1);
+    tcg_gen_or_i32(result, result, cy);
+    tcg_gen_andi_i32(result, result, 0xFF);
+    tcg_gen_shri_i32(cpu_psw_cy, src, 7);
+
+    store_byte_reg(RL78_BYTE_REG_A, result);
+
+    return true;
+}
+
+static bool trans_ROLWC(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_16);
+    TCGv_i32 result = tcg_temp_new_i32();
+    TCGv_i32 cy     = tcg_temp_new_i32();
+
+    tcg_gen_shli_i32(result, src, 1);
+    tcg_gen_or_i32(result, result, cpu_psw_cy);
+    tcg_gen_andi_i32(result, result, 0xFFFF);
+
+    tcg_gen_shri_i32(cy, src, 15);
+    tcg_gen_andi_i32(cpu_psw_cy, cy, 0x01);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_16);
+
+    return true;
+}
+
 static bool bitwise(DisasContext *ctx, RL78Operand dst, RL78Operand src,
                     void (*op)(TCGv_i32, TCGv_i32, TCGv_i32))
 {
@@ -1354,11 +1440,11 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SHLW] = trans_unimplemented,
     [RL78_INSN_SAR] = trans_unimplemented,
     [RL78_INSN_SARW] = trans_unimplemented,
-    [RL78_INSN_ROR] = trans_unimplemented,
-    [RL78_INSN_ROL] = trans_unimplemented,
-    [RL78_INSN_RORC] = trans_unimplemented,
-    [RL78_INSN_ROLC] = trans_unimplemented,
-    [RL78_INSN_ROLWC] = trans_unimplemented,
+    [RL78_INSN_ROR] = trans_ROR,
+    [RL78_INSN_ROL] = trans_ROL,
+    [RL78_INSN_RORC] = trans_RORC,
+    [RL78_INSN_ROLC] = trans_ROLC,
+    [RL78_INSN_ROLWC] = trans_ROLWC,
     [RL78_INSN_MOV1] = trans_MOV1,
     [RL78_INSN_AND1] = trans_AND1,
     [RL78_INSN_OR1] = trans_OR1,
