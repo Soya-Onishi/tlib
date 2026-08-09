@@ -52,7 +52,14 @@ jobs:
       - name: Run CMPW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
 
+      - name: Run CMP A, #imm instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmp_a_i.abs'
 
+      - name: Run MOVW rp instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'movw_rp_*.abs'
+
+      - name: Run MOD/IND DE instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mod_ind_de.abs'
 
       - name: Run MOV1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov1.abs'
