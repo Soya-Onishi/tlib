@@ -10,6 +10,8 @@
 
 void *tlib_guest_offset_to_host_ptr(uint64_t offset);
 
+void helper_rl78_mdu_cmd(CPUState *env, uint32_t cmd);
+
 static uint32_t rl78_reg_hl(CPUState *env)
 {
     const uint32_t bank = env->psw.rbs & 3;
@@ -56,6 +58,10 @@ static void rl78_write_byte(CPUState *env, uint32_t paddr, uint32_t data)
             break;
         case 0xFFFFA:
             env->psw = rl78_cpu_unpack_psw((uint8_t)data);
+            break;
+        case 0xFFFFB:
+            /* Same MDU command register as store_byte_paddr(0xFFFFB). */
+            helper_rl78_mdu_cmd(env, data);
             break;
         case 0xFFFFC:
             env->cs = data & 0x0F;
@@ -138,13 +144,8 @@ uint32_t helper_rl78_btclr(CPUState *env, uint32_t kind, uint32_t addr, uint32_t
 
 void helper_rl78_stb(CPUState *env, uint32_t paddr, uint32_t data)
 {
-    (void)env;
-    void *host = tlib_guest_offset_to_host_ptr(paddr);
-    if(host) {
-        *(uint8_t *)host = (uint8_t)(data & 0xFF);
-    } else {
-        stb_phys(paddr, data);
-    }
+    /* Route special SFR phys addresses (incl. MDU at 0xFFFFB) consistently. */
+    rl78_write_byte(env, paddr, data);
 }
 
 /* Multiply / divide / MAC unit — commanded by writes to 0xFFFFB. */
