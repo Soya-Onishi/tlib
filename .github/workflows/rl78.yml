@@ -22,12 +22,12 @@ jobs:
       - name: Fetch guest .abs
         run: python3 tests/rl78/fetch.py
 
-
       - name: Run AND1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'and1.abs'
 
       - name: Run CLR1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clr1.abs'
+
       - name: Run MOV instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov_*.abs'
 
@@ -69,32 +69,34 @@ jobs:
 
       - name: Run MOV1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov1.abs'
+
       - name: Run MOVS instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'movs.abs'
 
       - name: Run NOT1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'not1.abs'
+
       - name: Run ONEB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'oneb.abs'
 
       - name: Run ONEW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'onew.abs'
 
-
       - name: Run OR instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or.abs'
 
       - name: Run OR1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or1.abs'
+
       - name: Run SEL instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
-
 
       - name: Run SET1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'set1.abs'
 
       - name: Run SKIP instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'skip.abs'
+
       - name: Run SUB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sub.abs'
 
@@ -106,6 +108,7 @@ jobs:
 
       - name: Run XCH instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xch.abs'
+
       - name: Run XCHW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xchw.abs'
 
