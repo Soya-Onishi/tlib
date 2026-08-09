@@ -95,6 +95,8 @@ jobs:
       - name: Run SUBC instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'subc.abs'
 
+      - name: Run SUBW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'subw.abs'
 
       - name: Run XCH instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xch.abs'
