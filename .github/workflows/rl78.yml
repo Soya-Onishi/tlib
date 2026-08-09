@@ -43,6 +43,12 @@ jobs:
       - name: Run BR addr16 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'br_addr16.abs'
 
+      - name: Run CALL instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'call.abs'
+
+      - name: Run CALLT instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'callt.abs'
+
       - name: Run CLRB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrb.abs'
 
@@ -73,6 +79,10 @@ jobs:
 
       - name: Run OR1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'or1.abs'
+
+      - name: Run RETI instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'reti.abs'
+
       - name: Run SEL instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sel.abs'
 
