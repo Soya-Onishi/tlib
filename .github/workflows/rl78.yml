@@ -34,6 +34,9 @@ jobs:
       - name: Run ADD instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'add.abs'
 
+      - name: Run ADDW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addw.abs'
+
       - name: Run ADDC instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addc.abs'
 
