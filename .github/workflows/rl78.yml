@@ -52,6 +52,9 @@ jobs:
       - name: Run CMPW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
 
+      - name: Run PUSH/POP instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'pushpop.abs'
+
 
 
       - name: Run MOV1 instruction tests
