@@ -949,8 +949,10 @@ static void rl78_gen_rel_jump(DisasContext *ctx, int32_t rel)
     rl78_gen_goto_tb(ctx, 1, target);
 }
 
-/* Push return PC (and optionally PSW). ctx->base.pc is already past this insn
- * (QEMU pc_next). Needed by BRK vectoring; not a full CALL implementation. */
+/*
+ * Push return PC (and optionally PSW). After decode, ctx->base.pc is the
+ * address of the following instruction — same role as QEMU's pc_next.
+ */
 static void rl78_gen_prepare_call(DisasContext *ctx, const bool save_psw)
 {
     const uint32_t ret_pc  = ctx->base.pc;
@@ -970,6 +972,36 @@ static void rl78_gen_prepare_call(DisasContext *ctx, const bool save_psw)
     rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), tcg_const_i32(ret_pch));
     tcg_gen_subi_i32(cpu_sp, cpu_sp, 1);
     rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), tcg_const_i32(ret_pcl));
+}
+
+static bool call_ind_reg(DisasContext *ctx, RL78WordRegister reg)
+{
+    TCGv_i32 target = load_word_reg(reg);
+    TCGv_i32 pc_s   = tcg_temp_new_i32();
+
+    tcg_gen_mov_i32(pc_s, cpu_cs);
+    tcg_gen_shli_i32(pc_s, pc_s, 16);
+    tcg_gen_add_i32(target, target, pc_s);
+
+    rl78_gen_prepare_call(ctx, false);
+    tcg_gen_mov_i32(cpu_pc, target);
+    gen_exit_tb_no_chaining(ctx->base.tb);
+    ctx->base.is_jmp = DISAS_UPDATE;
+
+    return true;
+}
+
+static void call_abs(DisasContext *ctx, target_ulong target)
+{
+    rl78_gen_prepare_call(ctx, false);
+    rl78_gen_abs_jump(ctx, target);
+}
+
+static void call_rel(DisasContext *ctx, int32_t rel)
+{
+    const target_ulong target = ctx->base.pc + rel;
+
+    call_abs(ctx, target);
 }
 
 static void rl78_gen_ret(DisasContext *ctx, bool restore_psw)
@@ -1450,6 +1482,64 @@ static bool trans_AND(DisasContext *ctx, RL78Instruction *insn)
     return bitwise(ctx, insn->operand[0], insn->operand[1], tcg_gen_and_i32);
 }
 
+static bool trans_CALL(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78Operand target_op = insn->operand[0];
+
+    switch(target_op.kind) {
+    case RL78_OP_WORD_REG:
+        call_ind_reg(ctx, target_op.word_reg);
+        break;
+    case RL78_OP_ABS16: {
+        const uint32_t target = target_op.const_op & 0xFFFF;
+        call_abs(ctx, target);
+        break;
+    }
+    case RL78_OP_ABS20: {
+        const uint32_t target = target_op.const_op & 0xFFFFF;
+        call_abs(ctx, target);
+        break;
+    }
+    case RL78_OP_REL16: {
+        const int32_t rel = (int16_t)(target_op.const_op & 0xFFFF);
+        call_rel(ctx, rel);
+        break;
+    }
+    default:
+        // TODO: raise implementation error assert
+        break;
+    }
+
+    return true;
+}
+
+static bool trans_CALLT(DisasContext *ctx, RL78Instruction *insn)
+{
+    const target_ulong addr = insn->operand[0].const_op;
+    TCGv_i32 target = rl78_gen_lw(ctx, tcg_const_i32(addr));
+
+    rl78_gen_prepare_call(ctx, false);
+    tcg_gen_mov_i32(cpu_pc, target);
+    gen_exit_tb_no_chaining(ctx->base.tb);
+    ctx->base.is_jmp = DISAS_UPDATE;
+
+    return true;
+}
+
+static bool trans_RET(DisasContext *ctx, RL78Instruction *insn)
+{
+    (void)insn;
+    rl78_gen_ret(ctx, false);
+    return true;
+}
+
+static bool trans_RETI(DisasContext *ctx, RL78Instruction *insn)
+{
+    (void)insn;
+    rl78_gen_ret(ctx, true);
+    return true;
+}
+
 static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
 {
     RL78Operand op = insn->operand[0];
@@ -1834,11 +1924,11 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_SET1] = trans_SET1,
     [RL78_INSN_CLR1] = trans_CLR1,
     [RL78_INSN_NOT1] = trans_NOT1,
-    [RL78_INSN_CALL] = trans_unimplemented,
-    [RL78_INSN_CALLT] = trans_unimplemented,
+    [RL78_INSN_CALL] = trans_CALL,
+    [RL78_INSN_CALLT] = trans_CALLT,
     [RL78_INSN_BRK] = trans_BRK,
-    [RL78_INSN_RET] = trans_unimplemented,
-    [RL78_INSN_RETI] = trans_unimplemented,
+    [RL78_INSN_RET] = trans_RET,
+    [RL78_INSN_RETI] = trans_RETI,
     [RL78_INSN_RETB] = trans_RETB,
     [RL78_INSN_PUSH] = trans_PUSH,
     [RL78_INSN_POP] = trans_POP,
