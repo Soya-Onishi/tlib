@@ -949,6 +949,58 @@ static void rl78_gen_rel_jump(DisasContext *ctx, int32_t rel)
     rl78_gen_goto_tb(ctx, 1, target);
 }
 
+/* Push return PC (and optionally PSW). ctx->base.pc is already past this insn
+ * (QEMU pc_next). Needed by BRK vectoring; not a full CALL implementation. */
+static void rl78_gen_prepare_call(DisasContext *ctx, const bool save_psw)
+{
+    const uint32_t ret_pc  = ctx->base.pc;
+    const uint32_t ret_pcs = (ret_pc >> 16) & 0x0F;
+    const uint32_t ret_pch = (ret_pc >> 8) & 0xFF;
+    const uint32_t ret_pcl = (ret_pc >> 0) & 0xFF;
+
+    tcg_gen_subi_i32(cpu_sp, cpu_sp, 1);
+    if (save_psw) {
+        TCGv_i32 psw = load_psw();
+        rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), psw);
+    }
+
+    tcg_gen_subi_i32(cpu_sp, cpu_sp, 1);
+    rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), tcg_const_i32(ret_pcs));
+    tcg_gen_subi_i32(cpu_sp, cpu_sp, 1);
+    rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), tcg_const_i32(ret_pch));
+    tcg_gen_subi_i32(cpu_sp, cpu_sp, 1);
+    rl78_gen_sb(ctx, rl78_gen_addr(ctx, cpu_sp), tcg_const_i32(ret_pcl));
+}
+
+static void rl78_gen_ret(DisasContext *ctx, bool restore_psw)
+{
+    TCGv_i32 pcl, pch, pcs;
+    TCGv_i32 target = tcg_temp_new_i32();
+
+    pcl = rl78_gen_lb(ctx, rl78_gen_addr(ctx, cpu_sp));
+    tcg_gen_addi_i32(cpu_sp, cpu_sp, 1);
+    pch = rl78_gen_lb(ctx, rl78_gen_addr(ctx, cpu_sp));
+    tcg_gen_addi_i32(cpu_sp, cpu_sp, 1);
+    pcs = rl78_gen_lb(ctx, rl78_gen_addr(ctx, cpu_sp));
+    tcg_gen_addi_i32(cpu_sp, cpu_sp, 1);
+    if (restore_psw) {
+        TCGv_i32 psw = rl78_gen_lb(ctx, rl78_gen_addr(ctx, cpu_sp));
+        store_psw(ctx, psw);
+    }
+    tcg_gen_addi_i32(cpu_sp, cpu_sp, 1);
+
+    tcg_gen_shli_i32(pch, pch, 8);
+    tcg_gen_shli_i32(pcs, pcs, 16);
+
+    tcg_gen_mov_i32(target, pcl);
+    tcg_gen_or_i32(target, target, pch);
+    tcg_gen_or_i32(target, target, pcs);
+
+    tcg_gen_mov_i32(cpu_pc, target);
+    gen_exit_tb_no_chaining(ctx->base.tb);
+    ctx->base.is_jmp = DISAS_UPDATE;
+}
+
 static void rl78_gen_skip(DisasContext *ctx, TCGCond cond, TCGv_i32 operand)
 {
     /*
@@ -1425,6 +1477,28 @@ static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_BRK(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 target = rl78_gen_lw(ctx, tcg_const_i32(0x0007E));
+
+    (void)insn;
+    rl78_gen_prepare_call(ctx, true);
+    tcg_gen_movi_i32(cpu_psw_ie, 0);
+
+    tcg_gen_mov_i32(cpu_pc, target);
+    gen_exit_tb_no_chaining(ctx->base.tb);
+    ctx->base.is_jmp = DISAS_UPDATE;
+
+    return true;
+}
+
+static bool trans_RETB(DisasContext *ctx, RL78Instruction *insn)
+{
+    (void)insn;
+    rl78_gen_ret(ctx, true);
+    return true;
+}
+
 static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
 {
     rl78_gen_skip(ctx, TCG_COND_EQ, cpu_psw_z);
@@ -1762,10 +1836,10 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_NOT1] = trans_NOT1,
     [RL78_INSN_CALL] = trans_unimplemented,
     [RL78_INSN_CALLT] = trans_unimplemented,
-    [RL78_INSN_BRK] = trans_unimplemented,
+    [RL78_INSN_BRK] = trans_BRK,
     [RL78_INSN_RET] = trans_unimplemented,
     [RL78_INSN_RETI] = trans_unimplemented,
-    [RL78_INSN_RETB] = trans_unimplemented,
+    [RL78_INSN_RETB] = trans_RETB,
     [RL78_INSN_PUSH] = trans_PUSH,
     [RL78_INSN_POP] = trans_POP,
     [RL78_INSN_BR] = trans_BR,
