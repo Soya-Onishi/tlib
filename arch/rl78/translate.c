@@ -1315,6 +1315,46 @@ static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_SKC(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_skip(ctx, TCG_COND_EQ, cpu_psw_cy);
+    return true;
+}
+
+static bool trans_SKNC(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_skip(ctx, TCG_COND_NE, cpu_psw_cy);
+    return true;
+}
+
+static bool trans_SKNZ(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_skip(ctx, TCG_COND_NE, cpu_psw_z);
+    return true;
+}
+
+static bool trans_SKH(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 operand = tcg_temp_new_i32();
+    tcg_gen_mov_i32(operand, cpu_psw_z);
+    tcg_gen_or_i32(operand, operand, cpu_psw_cy);
+
+    rl78_gen_skip(ctx, TCG_COND_EQ, operand);
+
+    return true;
+}
+
+static bool trans_SKNH(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 operand = tcg_temp_new_i32();
+    tcg_gen_mov_i32(operand, cpu_psw_z);
+    tcg_gen_or_i32(operand, operand, cpu_psw_cy);
+
+    rl78_gen_skip(ctx, TCG_COND_NE, operand);
+
+    return true;
+}
+
 static bool trans_SEL(DisasContext *ctx, RL78Instruction *insn)
 {
     const uint32_t sel = insn->operand[0].const_op;
@@ -1491,12 +1531,12 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_BT] = trans_unimplemented,
     [RL78_INSN_BF] = trans_unimplemented,
     [RL78_INSN_BTCLR] = trans_unimplemented,
-    [RL78_INSN_SKC] = trans_unimplemented,
-    [RL78_INSN_SKNC] = trans_unimplemented,
+    [RL78_INSN_SKC] = trans_SKC,
+    [RL78_INSN_SKNC] = trans_SKNC,
     [RL78_INSN_SKZ] = trans_SKZ,
-    [RL78_INSN_SKNZ] = trans_unimplemented,
-    [RL78_INSN_SKH] = trans_unimplemented,
-    [RL78_INSN_SKNH] = trans_unimplemented,
+    [RL78_INSN_SKNZ] = trans_SKNZ,
+    [RL78_INSN_SKH] = trans_SKH,
+    [RL78_INSN_SKNH] = trans_SKNH,
     [RL78_INSN_SEL] = trans_SEL,
     [RL78_INSN_NOP] = trans_NOP,
     [RL78_INSN_HALT] = trans_unimplemented,
