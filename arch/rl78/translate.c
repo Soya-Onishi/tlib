@@ -1134,6 +1134,20 @@ static bool trans_CMPW(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool trans_MULU(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 a      = load_byte_reg(RL78_BYTE_REG_A);
+    TCGv_i32 x      = load_byte_reg(RL78_BYTE_REG_X);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_mul_i32(result, a, x);
+    tcg_gen_andi_i32(result, result, 0xFFFF);
+
+    store_word_reg(RL78_WORD_REG_AX, result);
+
+    return true;
+}
+
 static bool trans_INC(DisasContext *ctx, RL78Instruction *insn)
 {
     TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
@@ -1343,7 +1357,7 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_ADDW] = trans_unimplemented,
     [RL78_INSN_SUBW] = trans_unimplemented,
     [RL78_INSN_CMPW] = trans_CMPW,
-    [RL78_INSN_MULU] = trans_unimplemented,
+    [RL78_INSN_MULU] = trans_MULU,
     [RL78_INSN_INC] = trans_INC,
     [RL78_INSN_DEC] = trans_unimplemented,
     [RL78_INSN_INCW] = trans_unimplemented,
