@@ -34,6 +34,9 @@ jobs:
       - name: Run ADD instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'add.abs'
 
+      - name: Run ADDW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addw.abs'
+
       - name: Run ADDC instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'addc.abs'
 
@@ -49,13 +52,17 @@ jobs:
       - name: Run CLRW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'clrw.abs'
 
+      - name: Run CMP instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmp.abs'
+
       - name: Run CMPW instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'cmpw.abs'
 
       - name: Run PUSH/POP instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'pushpop.abs'
 
-
+      - name: Run INC/DEC instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'incdec.abs'
 
       - name: Run MOV1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mov1.abs'
@@ -82,12 +89,17 @@ jobs:
 
       - name: Run SET1 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'set1.abs'
+
+      - name: Run SKIP instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'skip.abs'
       - name: Run SUB instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'sub.abs'
 
       - name: Run SUBC instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'subc.abs'
 
+      - name: Run SUBW instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'subw.abs'
 
       - name: Run XCH instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'xch.abs'
