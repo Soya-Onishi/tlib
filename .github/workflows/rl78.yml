@@ -46,6 +46,9 @@ jobs:
       - name: Run BR addr16 instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'br_addr16.abs'
 
+      - name: Run BRANCH instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'branch.abs'
+
       - name: Run BRK instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'brk.abs'
 
