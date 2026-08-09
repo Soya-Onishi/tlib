@@ -146,7 +146,7 @@ static void rl78_gen_sw(DisasContext *ctx, TCGv_i32 addr, TCGv_i32 data)
     rl78_gen_store(ctx, access_addr, data, MO_16);
 }
 
-static TCGv_ptr reg_ptr(const uint reg) 
+static TCGv_ptr reg_ptr(const uint reg)
 {
     const uint regoffset = (uint)reg * sizeof(uint32_t);
 
@@ -158,8 +158,8 @@ static TCGv_ptr reg_ptr(const uint reg)
     tcg_gen_addi_i32(reg_offset, reg_offset, regoffset);
     tcg_gen_ext_i32_ptr(reg_ptr_offset, reg_offset);
 
-    tcg_gen_mov_i32(TCGV_PTR_TO_NAT(reg_ptr_base), TCGV_PTR_TO_NAT(cpu_env));
-    tcg_gen_addi_ptr(reg_ptr_base, reg_ptr_base, offsetof(CPUState, regs));
+    /* addi_ptr from cpu_env — mov_i32 via TCGV_PTR_TO_NAT truncates on 64-bit. */
+    tcg_gen_addi_ptr(reg_ptr_base, cpu_env, offsetof(CPUState, regs));
     tcg_gen_add_ptr(reg_ptr_base, reg_ptr_base, reg_ptr_offset);
 
     return reg_ptr_base;
@@ -370,7 +370,7 @@ static void store_byte_paddr(DisasContext *ctx, const uint32_t paddr, TCGv_i32 d
             tcg_gen_deposit_i32(cpu_es, cpu_es, data, 0, 4);
             break;
         default:
-            rl78_gen_store(ctx, tcg_const_i32(paddr), data, memop);
+            gen_helper_rl78_stb(cpu_env, tcg_const_i32(paddr), data);
             break;
     }
 }
@@ -406,7 +406,6 @@ static void store_paddr(DisasContext *ctx, const uint32_t paddr, TCGv_i32 data, 
 static void store_abs16(DisasContext *ctx, const uint32_t addr, TCGv_i32 data,
                         const TCGMemOp memop)
 {
-
     if(ctx->use_es) {
         TCGv_i32 a = rl78_gen_addr(ctx, tcg_const_i32(addr));
         rl78_gen_store(ctx, a, data, memop);
@@ -1229,6 +1228,109 @@ static bool trans_BR(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+
+static void rl78_gen_branch(DisasContext *ctx, const uint32_t op, TCGCond cond,
+                            TCGv_i32 operand)
+{
+    const int32_t rel = (int8_t)(op & 0xFF);
+    const target_ulong target = ctx->base.pc + rel;
+    int nobranch = gen_new_label();
+
+    tcg_gen_brcondi_i32(cond, operand, 0, nobranch);
+    rl78_gen_goto_tb(ctx, 1, target);
+
+    gen_set_label(nobranch);
+}
+
+static bool trans_BC(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_EQ, cpu_psw_cy);
+    return true;
+}
+
+static bool trans_BNC(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_NE, cpu_psw_cy);
+    return true;
+}
+
+static bool trans_BZ(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_EQ, cpu_psw_z);
+    return true;
+}
+
+static bool trans_BNZ(DisasContext *ctx, RL78Instruction *insn)
+{
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_NE, cpu_psw_z);
+    return true;
+}
+
+static bool trans_BH(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 operand = tcg_temp_local_new_i32();
+
+    tcg_gen_mov_i32(operand, cpu_psw_z);
+    tcg_gen_or_i32(operand, operand, cpu_psw_cy);
+
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_EQ, operand);
+    return true;
+}
+
+static bool trans_BNH(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 operand = tcg_temp_local_new_i32();
+
+    tcg_gen_mov_i32(operand, cpu_psw_z);
+    tcg_gen_or_i32(operand, operand, cpu_psw_cy);
+
+    rl78_gen_branch(ctx, insn->operand[0].const_op, TCG_COND_NE, operand);
+    return true;
+}
+
+static bool trans_BT(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData bit = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    TCGv_i32 b = tcg_temp_local_new_i32();
+
+    tcg_gen_mov_i32(b, bit.bit);
+    rl78_gen_branch(ctx, insn->operand[1].const_op, TCG_COND_EQ, b);
+    return true;
+}
+
+static bool trans_BF(DisasContext *ctx, RL78Instruction *insn)
+{
+    RL78BitData bit = rl78_gen_load_bit(ctx, insn->operand[0].bit);
+    TCGv_i32 b = tcg_temp_local_new_i32();
+
+    tcg_gen_mov_i32(b, bit.bit);
+    rl78_gen_branch(ctx, insn->operand[1].const_op, TCG_COND_NE, b);
+    return true;
+}
+
+static bool trans_BTCLR(DisasContext *ctx, RL78Instruction *insn)
+{
+    const int32_t rel = (int8_t)(insn->operand[1].const_op & 0xFF);
+    const target_ulong target = ctx->base.pc + rel;
+    const RL78OperandBit op = insn->operand[0].bit;
+    TCGv_i32 took = tcg_temp_local_new_i32();
+    TCGv_i32 dest = tcg_temp_local_new_i32();
+    TCGv_i32 kind = tcg_const_i32(op.kind);
+    TCGv_i32 addr = tcg_const_i32(op.addr);
+    TCGv_i32 bit = tcg_const_i32(op.bit);
+    TCGv_i32 use_es = tcg_const_i32(ctx->use_es ? 1 : 0);
+
+    gen_helper_rl78_btclr(took, cpu_env, kind, addr, bit, use_es);
+
+    tcg_gen_movcond_i32(TCG_COND_NE, dest, took, tcg_const_i32(0),
+                        tcg_const_i32(target), tcg_const_i32(ctx->base.pc));
+    tcg_gen_mov_i32(cpu_pc, dest);
+    /* Force full TB lookup; avoid chaining after a helper memory write. */
+    gen_exit_tb_no_chaining(ctx->base.tb);
+    ctx->base.is_jmp = DISAS_UPDATE;
+    return true;
+}
+
 static bool trans_SKZ(DisasContext *ctx, RL78Instruction *insn)
 {
     rl78_gen_skip(ctx, TCG_COND_EQ, cpu_psw_z);
@@ -1442,15 +1544,15 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_PUSH] = trans_unimplemented,
     [RL78_INSN_POP] = trans_unimplemented,
     [RL78_INSN_BR] = trans_BR,
-    [RL78_INSN_BC] = trans_unimplemented,
-    [RL78_INSN_BNC] = trans_unimplemented,
-    [RL78_INSN_BZ] = trans_unimplemented,
-    [RL78_INSN_BNZ] = trans_unimplemented,
-    [RL78_INSN_BH] = trans_unimplemented,
-    [RL78_INSN_BNH] = trans_unimplemented,
-    [RL78_INSN_BT] = trans_unimplemented,
-    [RL78_INSN_BF] = trans_unimplemented,
-    [RL78_INSN_BTCLR] = trans_unimplemented,
+    [RL78_INSN_BC] = trans_BC,
+    [RL78_INSN_BNC] = trans_BNC,
+    [RL78_INSN_BZ] = trans_BZ,
+    [RL78_INSN_BNZ] = trans_BNZ,
+    [RL78_INSN_BH] = trans_BH,
+    [RL78_INSN_BNH] = trans_BNH,
+    [RL78_INSN_BT] = trans_BT,
+    [RL78_INSN_BF] = trans_BF,
+    [RL78_INSN_BTCLR] = trans_BTCLR,
     [RL78_INSN_SKC] = trans_SKC,
     [RL78_INSN_SKNC] = trans_SKNC,
     [RL78_INSN_SKZ] = trans_SKZ,
@@ -1515,11 +1617,13 @@ int gen_intermediate_code(CPUState *env, DisasContextBase *base)
     if(use_skip) {
         gen_set_label(skip_label);
         /*
-         * If the wrapped insn ends the TB (e.g. BR), the execute path already
-         * emitted an exit. The skip path lands here and must continue at the
-         * following PC; otherwise SKZ; BR sequences never skip the branch.
+         * DISAS_TB_JUMP fallthrough is emitted in the epilogue (shared with
+         * conditional not-taken / BR skip). DISAS_JUMP already closed exits.
          */
-        if(dc->base.is_jmp != DISAS_NEXT) {
+        if(dc->base.is_jmp == DISAS_JUMP) {
+            tcg_gen_movi_i32(cpu_pc, dc->base.pc);
+            gen_exit_tb_no_chaining(dc->base.tb);
+        } else if(dc->base.is_jmp == DISAS_UPDATE) {
             gen_goto_tb(dc, 0, dc->base.pc);
         }
     }
@@ -1541,6 +1645,9 @@ uint32_t gen_intermediate_code_epilogue(CPUState *env, DisasContextBase *base)
             gen_exit_tb_no_chaining(dc->base.tb);
             break;
         case DISAS_TB_JUMP:
+            /* Not-taken / skip fallthrough for BR and conditional branches. */
+            gen_goto_tb(dc, 0, dc->base.pc);
+            break;
         case DISAS_JUMP:
             break;
         default:
