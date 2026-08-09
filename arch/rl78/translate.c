@@ -363,6 +363,10 @@ static void store_byte_paddr(DisasContext *ctx, const uint32_t paddr, TCGv_i32 d
         case 0xFFFFA:
             store_psw(ctx, data);
             break;
+        case 0xFFFFB:
+            /* Multiply/divide/MAC unit command register (SFR 0xFB). */
+            gen_helper_rl78_mdu_cmd(cpu_env, data);
+            break;
         case 0xFFFFC:
             tcg_gen_deposit_i32(cpu_cs, cpu_cs, data, 0, 4);
             break;

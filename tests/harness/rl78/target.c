@@ -29,7 +29,7 @@ typedef struct {
 
 static uint8_t g_rom[RL78_ROM_SIZE];
 static uint8_t g_ram[RL78_RAM_SIZE];
-/* Stub backing for 0xFFF00–0xFFFFF. Direct 0xFFFF8–0xFFFFD still bypass in TCG. */
+/* Stub backing for 0xFFF00–0xFFFFF. Direct 0xFFFF8–0xFFFFD / 0xFFFFB still bypass in TCG. */
 static uint8_t g_sfr[RL78_SFR_END - RL78_SFR_BASE];
 static Rl78TestMmio g_mmio;
 static HarnessMemoryRegion g_regions[3];
