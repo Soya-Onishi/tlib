@@ -1320,6 +1320,92 @@ static bool trans_MOV1(DisasContext *ctx, RL78Instruction *insn)
     return true;
 }
 
+static bool shift_logical_right(DisasContext *ctx, RL78Instruction *insn)
+{
+    TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 shamt  = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_shli_i32(result, src, 1);
+    tcg_gen_shr_i32(result, result, shamt);
+
+    tcg_gen_andi_i32(cpu_psw_cy, result, 0x01);
+    tcg_gen_shri_i32(result, result, 1);
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    return true;
+}
+
+static bool shift_left(DisasContext *ctx, RL78Instruction *insn,
+                       const unsigned opsize)
+{
+    TCGv_i32 src    = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 shamt  = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result = tcg_temp_new_i32();
+
+    tcg_gen_movi_i32(result, 0);
+    tcg_gen_shl_i32(result, src, shamt);
+
+    tcg_gen_shri_i32(cpu_psw_cy, result, opsize);
+    tcg_gen_andi_i32(cpu_psw_cy, cpu_psw_cy, 0x01);
+
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    return true;
+}
+
+static bool shift_arithmetic_right(DisasContext *ctx, RL78Instruction *insn,
+                                   const unsigned opsize)
+{
+    TCGv_i32 src          = rl78_gen_load_operand(ctx, insn->operand[0], MO_8);
+    TCGv_i32 shamt        = rl78_gen_load_operand(ctx, insn->operand[1], MO_8);
+    TCGv_i32 result       = tcg_temp_new_i32();
+    const unsigned align_size = 32 - opsize;
+
+    tcg_gen_movi_i32(result, 0);
+    tcg_gen_shli_i32(result, src, align_size);
+    tcg_gen_sar_i32(result, result, shamt);
+
+    tcg_gen_mov_i32(cpu_psw_cy, result);
+    tcg_gen_shri_i32(cpu_psw_cy, cpu_psw_cy, align_size - 1);
+    tcg_gen_andi_i32(cpu_psw_cy, cpu_psw_cy, 0x01);
+
+    tcg_gen_shri_i32(result, result, align_size);
+    rl78_gen_store_operand(ctx, insn->operand[0], result, MO_8);
+
+    return true;
+}
+
+static bool trans_SHR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_logical_right(ctx, insn);
+}
+
+static bool trans_SHRW(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_logical_right(ctx, insn);
+}
+
+static bool trans_SHL(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_left(ctx, insn, 8);
+}
+
+static bool trans_SHLW(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_left(ctx, insn, 16);
+}
+
+static bool trans_SAR(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_arithmetic_right(ctx, insn, 8);
+}
+
+static bool trans_SARW(DisasContext *ctx, RL78Instruction *insn)
+{
+    return shift_arithmetic_right(ctx, insn, 16);
+}
+
 static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_MOV] = trans_MOV,
     [RL78_INSN_XCH] = trans_XCH,
@@ -1348,12 +1434,12 @@ static TranslateHandler translator_table[RL78_INSN_UNKNOWN] = {
     [RL78_INSN_DEC] = trans_unimplemented,
     [RL78_INSN_INCW] = trans_unimplemented,
     [RL78_INSN_DECW] = trans_unimplemented,
-    [RL78_INSN_SHR] = trans_unimplemented,
-    [RL78_INSN_SHRW] = trans_unimplemented,
-    [RL78_INSN_SHL] = trans_unimplemented,
-    [RL78_INSN_SHLW] = trans_unimplemented,
-    [RL78_INSN_SAR] = trans_unimplemented,
-    [RL78_INSN_SARW] = trans_unimplemented,
+    [RL78_INSN_SHR] = trans_SHR,
+    [RL78_INSN_SHRW] = trans_SHRW,
+    [RL78_INSN_SHL] = trans_SHL,
+    [RL78_INSN_SHLW] = trans_SHLW,
+    [RL78_INSN_SAR] = trans_SAR,
+    [RL78_INSN_SARW] = trans_SARW,
     [RL78_INSN_ROR] = trans_unimplemented,
     [RL78_INSN_ROL] = trans_unimplemented,
     [RL78_INSN_RORC] = trans_unimplemented,
