@@ -85,6 +85,21 @@ jobs:
       - name: Run MULU instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mulu.abs'
 
+      - name: Run MULH instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mulh.abs'
+
+      - name: Run MULHU instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mulhu.abs'
+
+      - name: Run DIVHU instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'divhu.abs'
+
+      - name: Run DIVWU instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'divwu.abs'
+
+      - name: Run MAC instruction tests
+        run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'mac.abs'
+
       - name: Run PUSH/POP instruction tests
         run: python3 tests/rl78/run.py --harness ./build/tlib-harness --glob 'pushpop.abs'
 
