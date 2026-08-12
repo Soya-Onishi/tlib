@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 uint32_t tlib_set_maximum_block_size(uint32_t size);
@@ -41,6 +42,8 @@ int32_t tlib_is_irq_set(void);
 
 void tlib_add_breakpoint(uint64_t address);
 void tlib_remove_breakpoint(uint64_t address);
+size_t tlib_breakpoint_count(void);
+size_t tlib_list_breakpoints(uint64_t *addrs, size_t capacity);
 void tlib_set_block_begin_hook_present(uint32_t val);
 
 uint64_t tlib_get_total_executed_instructions(void);

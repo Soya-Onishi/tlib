@@ -1247,6 +1247,39 @@ void cpu_breakpoint_remove_all(CPUState *env, int mask)
     }
 }
 
+size_t cpu_breakpoint_count(CPUState *env, int flags)
+{
+    CPUBreakpoint *bp;
+    size_t count = 0;
+
+    QTAILQ_FOREACH(bp, &env->breakpoints, entry) {
+        if(bp->flags & flags) {
+            count++;
+        }
+    }
+    return count;
+}
+
+size_t cpu_breakpoint_list(CPUState *env, int flags, uint64_t *addrs, size_t capacity)
+{
+    CPUBreakpoint *bp;
+    size_t total = 0;
+    size_t written = 0;
+
+    QTAILQ_FOREACH(bp, &env->breakpoints, entry) {
+        if(!(bp->flags & flags)) {
+            continue;
+        }
+        if(addrs && written < capacity) {
+            addrs[written] = bp->pc;
+            written++;
+        }
+        total++;
+    }
+
+    return addrs ? written : total;
+}
+
 bool is_interrupt_pending(CPUState *env, int mask)
 {
     uint32_t interrupt_request;
