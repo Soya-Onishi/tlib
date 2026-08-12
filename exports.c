@@ -571,6 +571,20 @@ void tlib_remove_breakpoint(uint64_t address)
 
 EXC_VOID_1(tlib_remove_breakpoint, uint64_t, address)
 
+size_t tlib_breakpoint_count(void)
+{
+    return cpu_breakpoint_count(cpu, BP_GDB);
+}
+
+EXC_VALUE_0(size_t, tlib_breakpoint_count, 0)
+
+size_t tlib_list_breakpoints(uint64_t *addrs, size_t capacity)
+{
+    return cpu_breakpoint_list(cpu, BP_GDB, addrs, capacity);
+}
+
+EXC_VALUE_2(size_t, tlib_list_breakpoints, 0, uint64_t *, addrs, size_t, capacity)
+
 uint64_t translation_cache_size_min = MIN_CODE_GEN_BUFFER_SIZE;
 uint64_t translation_cache_size_max = MAX_CODE_GEN_BUFFER_SIZE;
 

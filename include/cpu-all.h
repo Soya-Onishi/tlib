@@ -18,6 +18,7 @@
  */
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "cpu-common.h"
@@ -597,6 +598,8 @@ int cpu_breakpoint_insert(CPUState *env, target_ulong pc, int flags, CPUBreakpoi
 int cpu_breakpoint_remove(CPUState *env, target_ulong pc, int flags);
 void cpu_breakpoint_remove_by_ref(CPUState *env, CPUBreakpoint *breakpoint);
 void cpu_breakpoint_remove_all(CPUState *env, int mask);
+size_t cpu_breakpoint_count(CPUState *env, int flags);
+size_t cpu_breakpoint_list(CPUState *env, int flags, uint64_t *addrs, size_t capacity);
 
 int cpu_init(const char *cpu_model);
 void cpu_reset(CPUState *s);
