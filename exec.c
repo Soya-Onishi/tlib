@@ -482,8 +482,17 @@ static void page_flush_tb_1(int level, void **lp)
 static void page_flush_tb(void)
 {
     int i;
+    int level;
+    int l2count = V_L1_SHIFT / L2_BITS;
+
+    if(l2count == 0) {
+        level = 0;
+    } else {
+        level = l2count - 1;
+    }
+
     for(i = 0; i < V_L1_SIZE; i++) {
-        page_flush_tb_1(V_L1_SHIFT / L2_BITS - 1, l1_map + i);
+        page_flush_tb_1(level, l1_map + i);
     }
 }
 
